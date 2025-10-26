@@ -1,0 +1,308 @@
+import Navbar from '@/components/Navbar';
+import Sidebar from '@/components/Sidebar';
+import Chart from '@/components/Chart';
+import Table from '@/components/Table';
+import {
+  projects,
+  budgetControls,
+  formatCurrency,
+  calculateVariance,
+} from '@/lib/dummyData';
+import {
+  DollarSign,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  FileDown,
+} from 'lucide-react';
+import { exportDashboardPDF } from '@/lib/pdfExport';
+
+export default function Dashboard() {
+  // Calculate summary statistics
+  const totalEstimated = projects.reduce(
+    (sum, p) => sum + p.estimatedCost,
+    0
+  );
+  const totalActual = projects.reduce((sum, p) => sum + p.actualCost, 0);
+  const totalVariance = calculateVariance(totalEstimated, totalActual);
+  const onTrackProjects = projects.filter(
+    (p) => p.status === 'On Track'
+  ).length;
+  const warningProjects = projects.filter(
+    (p) => p.status === 'Warning' || p.status === 'Over Budget'
+  ).length;
+
+  // Prepare chart data
+  const chartData = projects.map((p) => ({
+    name: p.name.split(' ').slice(0, 3).join(' '),
+    Estimasi: p.estimatedCost,
+    Aktual: p.actualCost,
+  }));
+
+  // Table columns
+  const columns = [
+    {
+      header: 'Nama Proyek',
+      accessor: 'name',
+      cell: (value: string) => (
+        <div className="font-medium text-gray-900">{value}</div>
+      ),
+    },
+    {
+      header: 'Estimasi',
+      accessor: 'estimatedCost',
+      cell: (value: number) => (
+        <span className="text-gray-700">{formatCurrency(value)}</span>
+      ),
+    },
+    {
+      header: 'Aktual',
+      accessor: 'actualCost',
+      cell: (value: number) => (
+        <span className="text-gray-700">{formatCurrency(value)}</span>
+      ),
+    },
+    {
+      header: 'Variance',
+      accessor: 'variance',
+      cell: (_: any, row: any) => {
+        const variance = calculateVariance(
+          row.estimatedCost,
+          row.actualCost
+        );
+        const isOver = variance > 0;
+        return (
+          <span
+            className={`font-semibold ${
+              isOver ? 'text-red-600' : 'text-green-600'
+            }`}
+          >
+            {isOver ? '+' : ''}
+            {variance.toFixed(2)}%
+          </span>
+        );
+      },
+    },
+    {
+      header: 'Progress',
+      accessor: 'progress',
+      cell: (value: number) => (
+        <div className="flex items-center gap-2">
+          <div className="w-24 bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-primary h-2 rounded-full"
+              style={{ width: `${value}%` }}
+            />
+          </div>
+          <span className="text-sm text-gray-600">{value}%</span>
+        </div>
+      ),
+    },
+    {
+      header: 'Status',
+      accessor: 'status',
+      cell: (value: string) => {
+        const colors = {
+          'On Track': 'bg-green-100 text-green-800',
+          Warning: 'bg-yellow-100 text-yellow-800',
+          'Over Budget': 'bg-red-100 text-red-800',
+        };
+        return (
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${
+              colors[value as keyof typeof colors]
+            }`}
+          >
+            {value}
+          </span>
+        );
+      },
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar />
+      <Navbar />
+
+      {/* Main Content */}
+      <main className="md:ml-64 pt-20 p-6">
+        {/* Header with Export Button */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600 mt-1">Overview seluruh proyek</p>
+          </div>
+          <button
+            onClick={() =>
+              exportDashboardPDF(
+                projects,
+                totalEstimated,
+                totalActual,
+                totalVariance
+              )
+            }
+            className="btn-primary flex items-center gap-2"
+          >
+            <FileDown size={20} />
+            Export PDF
+          </button>
+        </div>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {/* Total Estimasi */}
+          <div className="card">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Total Estimasi</p>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(totalEstimated)}
+                </h3>
+              </div>
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <DollarSign className="text-primary" size={24} />
+              </div>
+            </div>
+          </div>
+
+          {/* Total Aktual */}
+          <div className="card">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Total Aktual</p>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(totalActual)}
+                </h3>
+              </div>
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="text-purple-600" size={24} />
+              </div>
+            </div>
+          </div>
+
+          {/* Variance */}
+          <div className="card">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Variance Total</p>
+                <h3
+                  className={`text-2xl font-bold ${
+                    totalVariance > 0 ? 'text-red-600' : 'text-green-600'
+                  }`}
+                >
+                  {totalVariance > 0 ? '+' : ''}
+                  {totalVariance.toFixed(2)}%
+                </h3>
+              </div>
+              <div
+                className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                  totalVariance > 0 ? 'bg-red-100' : 'bg-green-100'
+                }`}
+              >
+                <AlertTriangle
+                  className={totalVariance > 0 ? 'text-red-600' : 'text-green-600'}
+                  size={24}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Projects Status */}
+          <div className="card">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Status Proyek</p>
+                <div className="flex items-center gap-3">
+                  <div>
+                    <span className="text-green-600 font-bold text-xl">
+                      {onTrackProjects}
+                    </span>
+                    <span className="text-xs text-gray-500 ml-1">On Track</span>
+                  </div>
+                  <div>
+                    <span className="text-red-600 font-bold text-xl">
+                      {warningProjects}
+                    </span>
+                    <span className="text-xs text-gray-500 ml-1">Warning</span>
+                  </div>
+                </div>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <CheckCircle className="text-green-600" size={24} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Chart Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          {/* Estimasi vs Aktual Chart */}
+          <div className="lg:col-span-2 card">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Perbandingan Estimasi vs Aktual per Proyek
+            </h3>
+            <Chart
+              data={chartData}
+              type="bar"
+              xAxisKey="name"
+              dataKeys={[
+                { key: 'Estimasi', color: '#3b82f6', name: 'Estimasi' },
+                { key: 'Aktual', color: '#8b5cf6', name: 'Aktual' },
+              ]}
+              height={350}
+            />
+          </div>
+
+          {/* Budget Control */}
+          <div className="card">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Budget Control
+            </h3>
+            <div className="space-y-4">
+              {budgetControls.slice(0, 4).map((bc) => {
+                const percentage = (bc.actualVolume / bc.estimatedVolume) * 100;
+                const isOver = percentage > 100;
+
+                return (
+                  <div key={bc.id}>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm font-medium text-gray-700">
+                        {bc.material}
+                      </span>
+                      <span
+                        className={`text-sm font-semibold ${
+                          isOver ? 'text-red-600' : 'text-green-600'
+                        }`}
+                      >
+                        {percentage.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full ${
+                          isOver ? 'bg-red-500' : 'bg-green-500'
+                        }`}
+                        style={{ width: `${Math.min(percentage, 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {bc.actualVolume} / {bc.estimatedVolume} {bc.unit}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Projects Table */}
+        <div className="card">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Daftar Proyek
+          </h3>
+          <Table columns={columns} data={projects} />
+        </div>
+      </main>
+    </div>
+  );
+}
