@@ -78,64 +78,65 @@ export default function Cashflow() {
       <Navbar />
 
       {/* Main Content */}
-      <main className="md:ml-64 pt-20 p-6">
+      <main className="md:ml-64 pt-16 md:pt-20 p-3 sm:p-4 md:p-6">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center">
+        <div className="mb-4 md:mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">
                 Cashflow Management
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-sm md:text-base text-gray-600 mt-1">
                 Monitor arus kas dan keuangan proyek
               </p>
             </div>
             <button
               onClick={() => exportCashflowPDF(cashflows)}
-              className="btn-secondary flex items-center gap-2"
+              className="btn-secondary flex items-center gap-2 text-sm md:text-base"
             >
-              <FileDown size={20} />
-              Export PDF
+              <FileDown size={18} className="md:w-5 md:h-5" />
+              <span className="hidden sm:inline">Export PDF</span>
+              <span className="sm:hidden">Export</span>
             </button>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-6 mb-4 md:mb-6">
           <div className="card">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total Pemasukan</p>
-                <h3 className="text-xl font-bold text-green-600">
+              <div className="flex-1 min-w-0 mr-2">
+                <p className="text-xs md:text-sm text-gray-600 mb-1">Total Pemasukan</p>
+                <h3 className="text-base md:text-xl font-bold text-green-600 truncate">
                   {formatCurrency(totalIncome)}
                 </h3>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="text-green-600" size={24} />
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="text-green-600" size={20} />
               </div>
             </div>
           </div>
 
           <div className="card">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total Pengeluaran</p>
-                <h3 className="text-xl font-bold text-red-600">
+              <div className="flex-1 min-w-0 mr-2">
+                <p className="text-xs md:text-sm text-gray-600 mb-1">Total Pengeluaran</p>
+                <h3 className="text-base md:text-xl font-bold text-red-600 truncate">
                   {formatCurrency(totalExpense)}
                 </h3>
               </div>
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <DollarSign className="text-red-600" size={24} />
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <DollarSign className="text-red-600" size={20} />
               </div>
             </div>
           </div>
 
           <div className="card">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Saldo Bersih</p>
+              <div className="flex-1 min-w-0 mr-2">
+                <p className="text-xs md:text-sm text-gray-600 mb-1">Saldo Bersih</p>
                 <h3
-                  className={`text-xl font-bold ${
+                  className={`text-base md:text-xl font-bold truncate ${
                     netBalance >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}
                 >
@@ -143,13 +144,13 @@ export default function Cashflow() {
                 </h3>
               </div>
               <div
-                className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
                   netBalance >= 0 ? 'bg-green-100' : 'bg-red-100'
                 }`}
               >
                 <Activity
                   className={netBalance >= 0 ? 'text-green-600' : 'text-red-600'}
-                  size={24}
+                  size={20}
                 />
               </div>
             </div>
@@ -157,8 +158,8 @@ export default function Cashflow() {
         </div>
 
         {/* Cashflow Chart */}
-        <div className="card mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="card mb-4 md:mb-6">
+          <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
             Grafik Arus Kas Bulanan
           </h2>
           <Chart
@@ -174,9 +175,9 @@ export default function Cashflow() {
         </div>
 
         {/* Cashflow by Project Chart */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
               Perbandingan Pemasukan vs Pengeluaran
             </h2>
             <Chart
@@ -192,7 +193,7 @@ export default function Cashflow() {
           </div>
 
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <h2 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
               Tren Saldo Bulanan
             </h2>
             <Chart
@@ -214,7 +215,7 @@ export default function Cashflow() {
         </div>
 
         {/* Additional Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-4 md:mt-6">
           <div className="card bg-blue-50 border-blue-200">
             <h3 className="text-lg font-semibold text-blue-900 mb-2">
               💡 Tips Cashflow Management

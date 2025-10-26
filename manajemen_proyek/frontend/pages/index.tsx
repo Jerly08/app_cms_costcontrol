@@ -126,12 +126,12 @@ export default function Dashboard() {
       <Navbar />
 
       {/* Main Content */}
-      <main className="md:ml-64 pt-20 p-6">
+      <main className="md:ml-64 pt-16 md:pt-20 p-3 sm:p-4 md:p-6">
         {/* Header with Export Button */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 md:mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-1">Overview seluruh proyek</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-sm md:text-base text-gray-600 mt-1">Overview seluruh proyek</p>
           </div>
           <button
             onClick={() =>
@@ -142,25 +142,26 @@ export default function Dashboard() {
                 totalVariance
               )
             }
-            className="btn-primary flex items-center gap-2"
+            className="btn-primary flex items-center gap-2 text-sm md:text-base"
           >
-            <FileDown size={20} />
-            Export PDF
+            <FileDown size={18} className="md:w-5 md:h-5" />
+            <span className="hidden sm:inline">Export PDF</span>
+            <span className="sm:hidden">Export</span>
           </button>
         </div>
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-6">
           {/* Total Estimasi */}
           <div className="card">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total Estimasi</p>
-                <h3 className="text-2xl font-bold text-gray-900">
+              <div className="flex-1 min-w-0 mr-2">
+                <p className="text-xs md:text-sm text-gray-600 mb-1">Total Estimasi</p>
+                <h3 className="text-lg md:text-2xl font-bold text-gray-900 truncate">
                   {formatCurrency(totalEstimated)}
                 </h3>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <DollarSign className="text-primary" size={24} />
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <DollarSign className="text-primary" size={20} />
               </div>
             </div>
           </div>
@@ -168,14 +169,14 @@ export default function Dashboard() {
           {/* Total Aktual */}
           <div className="card">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total Aktual</p>
-                <h3 className="text-2xl font-bold text-gray-900">
+              <div className="flex-1 min-w-0 mr-2">
+                <p className="text-xs md:text-sm text-gray-600 mb-1">Total Aktual</p>
+                <h3 className="text-lg md:text-2xl font-bold text-gray-900 truncate">
                   {formatCurrency(totalActual)}
                 </h3>
               </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="text-purple-600" size={24} />
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="text-purple-600" size={20} />
               </div>
             </div>
           </div>
@@ -183,10 +184,10 @@ export default function Dashboard() {
           {/* Variance */}
           <div className="card">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Variance Total</p>
+              <div className="flex-1 min-w-0 mr-2">
+                <p className="text-xs md:text-sm text-gray-600 mb-1">Variance Total</p>
                 <h3
-                  className={`text-2xl font-bold ${
+                  className={`text-lg md:text-2xl font-bold ${
                     totalVariance > 0 ? 'text-red-600' : 'text-green-600'
                   }`}
                 >
@@ -195,13 +196,13 @@ export default function Dashboard() {
                 </h3>
               </div>
               <div
-                className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
                   totalVariance > 0 ? 'bg-red-100' : 'bg-green-100'
                 }`}
               >
                 <AlertTriangle
                   className={totalVariance > 0 ? 'text-red-600' : 'text-green-600'}
-                  size={24}
+                  size={20}
                 />
               </div>
             </div>
@@ -210,35 +211,35 @@ export default function Dashboard() {
           {/* Projects Status */}
           <div className="card">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Status Proyek</p>
-                <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0 mr-2">
+                <p className="text-xs md:text-sm text-gray-600 mb-1">Status Proyek</p>
+                <div className="flex items-center gap-2 md:gap-3">
                   <div>
-                    <span className="text-green-600 font-bold text-xl">
+                    <span className="text-green-600 font-bold text-lg md:text-xl">
                       {onTrackProjects}
                     </span>
                     <span className="text-xs text-gray-500 ml-1">On Track</span>
                   </div>
                   <div>
-                    <span className="text-red-600 font-bold text-xl">
+                    <span className="text-red-600 font-bold text-lg md:text-xl">
                       {warningProjects}
                     </span>
                     <span className="text-xs text-gray-500 ml-1">Warning</span>
                   </div>
                 </div>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="text-green-600" size={24} />
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="text-green-600" size={20} />
               </div>
             </div>
           </div>
         </div>
 
         {/* Chart Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
           {/* Estimasi vs Aktual Chart */}
           <div className="lg:col-span-2 card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
               Perbandingan Estimasi vs Aktual per Proyek
             </h3>
             <Chart
@@ -255,7 +256,7 @@ export default function Dashboard() {
 
           {/* Budget Control */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
               Budget Control
             </h3>
             <div className="space-y-4">

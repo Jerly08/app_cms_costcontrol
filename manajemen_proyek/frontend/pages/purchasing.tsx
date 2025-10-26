@@ -132,66 +132,67 @@ export default function Purchasing() {
       <Navbar />
 
       {/* Main Content */}
-      <main className="md:ml-64 pt-20 p-6">
+      <main className="md:ml-64 pt-16 md:pt-20 p-3 sm:p-4 md:p-6">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center">
+        <div className="mb-4 md:mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">
                 Purchasing Management
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-sm md:text-base text-gray-600 mt-1">
                 Kelola pembelian material proyek konstruksi
               </p>
             </div>
             <button
               onClick={() => exportPurchasingPDF(purchases)}
-              className="btn-secondary flex items-center gap-2"
+              className="btn-secondary flex items-center gap-2 text-sm md:text-base"
             >
-              <FileDown size={20} />
-              Export PDF
+              <FileDown size={18} className="md:w-5 md:h-5" />
+              <span className="hidden sm:inline">Export PDF</span>
+              <span className="sm:hidden">Export</span>
             </button>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-6 mb-4 md:mb-6">
           <div className="card">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total Estimasi</p>
-                <h3 className="text-xl font-bold text-gray-900">
+              <div className="flex-1 min-w-0 mr-2">
+                <p className="text-xs md:text-sm text-gray-600 mb-1">Total Estimasi</p>
+                <h3 className="text-base md:text-xl font-bold text-gray-900 truncate">
                   {formatCurrency(totalEstimated)}
                 </h3>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <ShoppingCart className="text-primary" size={24} />
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <ShoppingCart className="text-primary" size={20} />
               </div>
             </div>
           </div>
 
           <div className="card">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total Aktual</p>
-                <h3 className="text-xl font-bold text-gray-900">
+              <div className="flex-1 min-w-0 mr-2">
+                <p className="text-xs md:text-sm text-gray-600 mb-1">Total Aktual</p>
+                <h3 className="text-base md:text-xl font-bold text-gray-900 truncate">
                   {formatCurrency(totalActual)}
                 </h3>
               </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="text-purple-600" size={24} />
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="text-purple-600" size={20} />
               </div>
             </div>
           </div>
 
           <div className="card">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">
+              <div className="flex-1 min-w-0 mr-2">
+                <p className="text-xs md:text-sm text-gray-600 mb-1">
                   {savings >= 0 ? 'Penghematan' : 'Kelebihan'}
                 </p>
                 <h3
-                  className={`text-xl font-bold ${
+                  className={`text-base md:text-xl font-bold truncate ${
                     savings >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}
                 >
@@ -199,14 +200,14 @@ export default function Purchasing() {
                 </h3>
               </div>
               <div
-                className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
                   savings >= 0 ? 'bg-green-100' : 'bg-red-100'
                 }`}
               >
                 {savings >= 0 ? (
-                  <TrendingDown className="text-green-600" size={24} />
+                  <TrendingDown className="text-green-600" size={20} />
                 ) : (
-                  <TrendingUp className="text-red-600" size={24} />
+                  <TrendingUp className="text-red-600" size={20} />
                 )}
               </div>
             </div>
@@ -223,7 +224,7 @@ export default function Purchasing() {
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Proyek

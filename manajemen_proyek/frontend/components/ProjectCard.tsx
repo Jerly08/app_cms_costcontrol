@@ -18,17 +18,17 @@ const ProjectCard = ({ project }: ProjectCardProps) => {
   return (
     <div className="card hover:shadow-lg transition-shadow cursor-pointer">
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+      <div className="flex items-start justify-between gap-2 mb-4">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1 line-clamp-2">
             {project.name}
           </h3>
-          <p className="text-sm text-gray-500">
+          <p className="text-xs md:text-sm text-gray-500">
             {project.startDate} - {project.endDate}
           </p>
         </div>
         <span
-          className={`px-3 py-1 rounded-full text-xs font-medium ${
+          className={`px-2 md:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
             statusColors[project.status]
           }`}
         >
