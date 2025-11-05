@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unipro Project Manager - Login</title>
+    <link rel="stylesheet" href="/static/css/login.css">
+</head>
+<body>
+    <div class="container">
+        <div class="login-wrapper">
+            <div class="header">
+                <h1>Unipro Project Manager</h1>
+                <p class="subtitle">Sign in to access your project dashboard</p>
+            </div>
+            
+            <div class="login-box">
+                <h2 class="form-title">Sign In</h2>
+                <p class="form-subtitle">Enter your credentials to access the system</p>
+                
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+                
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            placeholder="Enter your email"
+                            required
+                            autocomplete="email"
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="Enter your password"
+                            required
+                            autocomplete="current-password"
+                        >
+                    </div>
+                    
+                    <button type="submit" class="btn-signin" id="submitBtn">
+                        Sign In
+                    </button>
+                </form>
+                
+                <div class="test-accounts">
+                    <p class="test-title">Test Accounts:</p>
+                    <ul>
+                        <li><strong>CEO:</strong> ceo@unipro.com / ceo123</li>
+                        <li><strong>Project Director:</strong> christopher@unipro.com / christopher123</li>
+                        <li><strong>Director:</strong> director@unipro.com / director123</li>
+                        <li><strong>Manager:</strong> manager@unipro.com / manager123</li>
+                        <li><strong>Cost Control:</strong> costcontrol@unipro.com / costcontrol123</li>
+                        <li><strong>Purchasing:</strong> purchasing@unipro.com / purchasing123</li>
+                        <li><strong>Tim Lapangan:</strong> lapangan@unipro.com / lapangan123</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/js/login.js"></script>
+</body>
+</html>
+

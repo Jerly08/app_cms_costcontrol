@@ -1,31 +1,65 @@
-# Cost Control Construction Management System - Frontend
+# Cost Control Construction Management System
 
-Frontend aplikasi manajemen proyek konstruksi dengan fokus pada **pengendalian biaya aktual vs estimasi**.
+Aplikasi manajemen proyek konstruksi full-stack dengan fokus pada **pengendalian biaya aktual vs estimasi**.
 
 ## 🚀 Teknologi
 
+### Frontend
 - **Framework**: Next.js 14 (Pages Router)
 - **Bahasa**: TypeScript
 - **Styling**: Tailwind CSS
 - **Charts**: Recharts
 - **Icons**: Lucide React
 
-## 📦 Instalasi
+### Backend
+- **Language**: Golang
+- **Framework**: Gin
+- **ORM**: GORM
+- **Database**: MySQL
+- **Auth**: JWT
 
-1. Install dependencies:
-```bash
-npm install
+## 📦 Quick Start
+
+### Cara Cepat (Recommended)
+Jalankan frontend dan backend sekaligus:
+```powershell
+.\start-all.ps1
 ```
 
-2. Jalankan development server:
+Script ini akan membuka 2 terminal terpisah untuk backend dan frontend.
+
+### Cara Manual
+
+#### 1. Setup Database
 ```bash
+mysql -u root -p < backend/create_database.sql
+```
+
+#### 2. Setup & Jalankan Backend
+```bash
+cd backend
+cp .env.example .env
+# Edit .env sesuai konfigurasi MySQL
+go mod download
+go run cmd/main.go
+```
+Backend akan berjalan di `http://localhost:8080`
+
+#### 3. Setup & Jalankan Frontend
+```bash
+cd frontend
+npm install
 npm run dev
 ```
+Frontend akan berjalan di `http://localhost:3000`
 
-3. Buka browser dan akses:
-```
-http://localhost:3000
-```
+## 🔐 Login Credentials
+
+| Role | Username | Password |
+|------|----------|----------|
+| Director | `director` | `password123` |
+| Manager | `manager` | `password123` |
+| Tim Lapangan | `timlapangan` | `password123` |
 
 ## 📁 Struktur Folder
 
@@ -133,12 +167,21 @@ npm run lint     # Lint code dengan ESLint
 - **Border Radius**: 8px (lg) untuk cards
 - **Shadows**: Soft shadows untuk depth
 
+## ✅ Fitur yang Sudah Terintegrasi
+
+- [x] Integrasi dengan Backend API (Golang + MySQL)
+- [x] Autentikasi & Authorization (JWT)
+- [x] Role-based Access Control (Director, Manager, Tim Lapangan)
+- [x] CRUD Projects dengan API
+- [x] Protected Routes
+- [x] Export data ke PDF
+- [x] Responsive Design (Mobile-friendly)
+
 ## 🔜 Pengembangan Selanjutnya
 
-- [ ] Integrasi dengan Backend API
-- [ ] Autentikasi & Authorization
-- [ ] Real-time updates
-- [x] Export data ke PDF ✅
+- [ ] Daily & Weekly Reports
+- [ ] User Management
+- [ ] Real-time updates (WebSocket)
 - [ ] Export data ke Excel
 - [ ] Filter & sorting advanced
 - [ ] Notifikasi system

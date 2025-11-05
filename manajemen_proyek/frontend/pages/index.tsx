@@ -3,7 +3,7 @@ import Sidebar from '@/components/Sidebar';
 import Chart from '@/components/Chart';
 import Table from '@/components/Table';
 import {
-  projects,
+  projects as dummyProjects,
   budgetControls,
   formatCurrency,
   calculateVariance,
@@ -14,16 +14,59 @@ import {
   AlertTriangle,
   CheckCircle,
   FileDown,
+  Loader,
 } from 'lucide-react';
 import { exportDashboardPDF } from '@/lib/pdfExport';
+import { useState, useEffect } from 'react';
+import { projectsAPI, dashboardAPI } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
 
 export default function Dashboard() {
+  const [projects, setProjects] = useState<any[]>([]);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const { isAuthenticated, loading: authLoading, user } = useAuth();
+  const router = useRouter();
+
+  // Fetch dashboard data based on role
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (isAuthenticated) {
+      fetchDashboardData();
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      // Fetch role-specific dashboard
+      const dashResponse = await dashboardAPI.getRoleDashboard();
+      setDashboardData(dashResponse.data || dashResponse);
+
+      // Also fetch projects for general overview
+      const projResponse = await projectsAPI.getAll();
+      setProjects(projResponse.data || []);
+    } catch (err: any) {
+      console.error('Error fetching dashboard:', err);
+      // Fallback to dummy data for demo
+      setProjects(dummyProjects);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Calculate summary statistics
   const totalEstimated = projects.reduce(
-    (sum, p) => sum + p.estimatedCost,
+    (sum, p) => sum + (p.estimatedCost || p.estimated_cost || 0),
     0
   );
-  const totalActual = projects.reduce((sum, p) => sum + p.actualCost, 0);
+  const totalActual = projects.reduce((sum, p) => sum + (p.actualCost || p.actual_cost || 0), 0);
   const totalVariance = calculateVariance(totalEstimated, totalActual);
   const onTrackProjects = projects.filter(
     (p) => p.status === 'On Track'

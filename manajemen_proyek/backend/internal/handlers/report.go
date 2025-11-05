@@ -1,0 +1,360 @@
+package handlers
+
+import (
+	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/unipro/project-management/internal/models"
+	"gorm.io/gorm"
+)
+
+type ReportHandler struct {
+	db *gorm.DB
+}
+
+func NewReportHandler(db *gorm.DB) *ReportHandler {
+	return &ReportHandler{db: db}
+}
+
+// ===== DAILY REPORTS =====
+
+// CreateDailyReport creates a new daily report
+func (h *ReportHandler) CreateDailyReport(c *gin.Context) {
+	userID, _ := c.Get("userID")
+
+	var input struct {
+		ProjectID  uint                      `json:"project_id" binding:"required"`
+		Date       string                    `json:"date" binding:"required"`
+		Activities string                    `json:"activities" binding:"required"`
+		Progress   float64                   `json:"progress"`
+		Weather    models.WeatherCondition   `json:"weather"`
+		Workers    int                       `json:"workers"`
+		Notes      string                    `json:"notes"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Parse date
+	date, err := time.Parse("2006-01-02", input.Date)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format. Use YYYY-MM-DD"})
+		return
+	}
+
+	report := models.DailyReport{
+		ProjectID:  input.ProjectID,
+		Date:       date,
+		Activities: input.Activities,
+		Progress:   input.Progress,
+		Weather:    input.Weather,
+		Workers:    input.Workers,
+		Notes:      input.Notes,
+		ReportedBy: userID.(uint),
+	}
+
+	if err := h.db.Create(&report).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create daily report"})
+		return
+	}
+
+	// Load relations
+	h.db.Preload("Project").Preload("Reporter").Preload("Photos").First(&report, report.ID)
+
+	c.JSON(http.StatusCreated, gin.H{"data": report})
+}
+
+// GetDailyReports returns all daily reports with optional filters
+func (h *ReportHandler) GetDailyReports(c *gin.Context) {
+	projectID := c.Query("project_id")
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+
+	query := h.db.Preload("Project").Preload("Reporter").Preload("Photos")
+
+	// Filter by project
+	if projectID != "" {
+		query = query.Where("project_id = ?", projectID)
+	}
+
+	// Filter by date range
+	if startDate != "" {
+		query = query.Where("date >= ?", startDate)
+	}
+	if endDate != "" {
+		query = query.Where("date <= ?", endDate)
+	}
+
+	var reports []models.DailyReport
+	if err := query.Order("date DESC").Find(&reports).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch daily reports"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": reports})
+}
+
+// GetDailyReportByID returns a single daily report
+func (h *ReportHandler) GetDailyReportByID(c *gin.Context) {
+	id := c.Param("id")
+
+	var report models.DailyReport
+	if err := h.db.Preload("Project").Preload("Reporter").Preload("Photos").First(&report, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Daily report not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch daily report"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": report})
+}
+
+// UpdateDailyReport updates an existing daily report
+func (h *ReportHandler) UpdateDailyReport(c *gin.Context) {
+	id := c.Param("id")
+	userID, _ := c.Get("userID")
+
+	var report models.DailyReport
+	if err := h.db.First(&report, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Daily report not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch daily report"})
+		return
+	}
+
+	// Check if user is the reporter
+	if report.ReportedBy != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You can only edit your own reports"})
+		return
+	}
+
+	var input struct {
+		Activities string                    `json:"activities"`
+		Progress   float64                   `json:"progress"`
+		Weather    models.WeatherCondition   `json:"weather"`
+		Workers    int                       `json:"workers"`
+		Notes      string                    `json:"notes"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Update fields
+	report.Activities = input.Activities
+	report.Progress = input.Progress
+	report.Weather = input.Weather
+	report.Workers = input.Workers
+	report.Notes = input.Notes
+
+	if err := h.db.Save(&report).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update daily report"})
+		return
+	}
+
+	// Load relations
+	h.db.Preload("Project").Preload("Reporter").Preload("Photos").First(&report, report.ID)
+
+	c.JSON(http.StatusOK, gin.H{"data": report})
+}
+
+// DeleteDailyReport deletes a daily report
+func (h *ReportHandler) DeleteDailyReport(c *gin.Context) {
+	id := c.Param("id")
+	userID, _ := c.Get("userID")
+
+	var report models.DailyReport
+	if err := h.db.First(&report, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Daily report not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch daily report"})
+		return
+	}
+
+	// Check if user is the reporter
+	if report.ReportedBy != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You can only delete your own reports"})
+		return
+	}
+
+	if err := h.db.Delete(&report).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete daily report"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Daily report deleted successfully"})
+}
+
+// ===== WEEKLY REPORTS =====
+
+// GetWeeklyReports returns all weekly reports with optional filters
+func (h *ReportHandler) GetWeeklyReports(c *gin.Context) {
+	projectID := c.Query("project_id")
+	year := c.Query("year")
+
+	query := h.db.Preload("Project").Preload("Generator")
+
+	if projectID != "" {
+		query = query.Where("project_id = ?", projectID)
+	}
+
+	if year != "" {
+		query = query.Where("year = ?", year)
+	}
+
+	var reports []models.WeeklyReport
+	if err := query.Order("year DESC, week_number DESC").Find(&reports).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch weekly reports"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": reports})
+}
+
+// GetWeeklyReportByID returns a single weekly report
+func (h *ReportHandler) GetWeeklyReportByID(c *gin.Context) {
+	id := c.Param("id")
+
+	var report models.WeeklyReport
+	if err := h.db.Preload("Project").Preload("Generator").First(&report, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Weekly report not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch weekly report"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": report})
+}
+
+// GenerateWeeklyReport generates a weekly report from daily reports
+func (h *ReportHandler) GenerateWeeklyReport(c *gin.Context) {
+	userID, _ := c.Get("userID")
+
+	var input struct {
+		ProjectID    uint   `json:"project_id" binding:"required"`
+		StartDate    string `json:"start_date" binding:"required"`
+		EndDate      string `json:"end_date" binding:"required"`
+		Summary      string `json:"summary"`
+		Achievements string `json:"achievements"`
+		Issues       string `json:"issues"`
+		NextWeekPlan string `json:"next_week_plan"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Parse dates
+	startDate, err := time.Parse("2006-01-02", input.StartDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start_date format"})
+		return
+	}
+
+	endDate, err := time.Parse("2006-01-02", input.EndDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end_date format"})
+		return
+	}
+
+	// Get daily reports in the date range
+	var dailyReports []models.DailyReport
+	if err := h.db.Where("project_id = ? AND date >= ? AND date <= ?", 
+		input.ProjectID, startDate, endDate).Find(&dailyReports).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch daily reports"})
+		return
+	}
+
+	// Calculate total progress (average)
+	var totalProgress float64
+	if len(dailyReports) > 0 {
+		for _, report := range dailyReports {
+			totalProgress += report.Progress
+		}
+		totalProgress = totalProgress / float64(len(dailyReports))
+	}
+
+	// Calculate week number
+	_, weekNum := startDate.ISOWeek()
+
+	// Create weekly report
+	weeklyReport := models.WeeklyReport{
+		ProjectID:     input.ProjectID,
+		WeekNumber:    weekNum,
+		Year:          startDate.Year(),
+		StartDate:     startDate,
+		EndDate:       endDate,
+		Summary:       input.Summary,
+		TotalProgress: totalProgress,
+		Achievements:  input.Achievements,
+		Issues:        input.Issues,
+		NextWeekPlan:  input.NextWeekPlan,
+		GeneratedBy:   userID.(uint),
+	}
+
+	if err := h.db.Create(&weeklyReport).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create weekly report"})
+		return
+	}
+
+	// Load relations
+	h.db.Preload("Project").Preload("Generator").First(&weeklyReport, weeklyReport.ID)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"data": weeklyReport,
+		"daily_reports_count": len(dailyReports),
+	})
+}
+
+// DownloadWeeklyReportPDF generates and downloads PDF for weekly report
+func (h *ReportHandler) DownloadWeeklyReportPDF(c *gin.Context) {
+	id := c.Param("id")
+
+	var report models.WeeklyReport
+	if err := h.db.Preload("Project").First(&report, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Weekly report not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch weekly report"})
+		return
+	}
+
+	// TODO: Implement PDF generation
+	// For now, return a placeholder response
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"error": "PDF generation not implemented yet",
+		"note": "Will implement using go-pdf or wkhtmltopdf library",
+		"data": report,
+	})
+
+	// Future implementation:
+	// 1. Use go-pdf library or wkhtmltopdf
+	// 2. Generate PDF with report data
+	// 3. Save to file system or S3
+	// 4. Return PDF file as response
+	// 
+	// Example:
+	// pdfPath := fmt.Sprintf("./uploads/reports/weekly_%d.pdf", report.ID)
+	// if err := generatePDF(&report, pdfPath); err != nil {
+	//     c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate PDF"})
+	//     return
+	// }
+	// c.File(pdfPath)
+}
+

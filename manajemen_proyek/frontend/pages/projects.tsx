@@ -1,14 +1,51 @@
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 import ProjectCard from '@/components/ProjectCard';
-import { projects } from '@/lib/dummyData';
-import { Search, Filter, Plus, FileDown } from 'lucide-react';
-import { useState } from 'react';
+import { projects as dummyProjects } from '@/lib/dummyData';
+import { Search, Filter, Plus, FileDown, Loader } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { exportProjectsPDF } from '@/lib/pdfExport';
+import { projectsAPI } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
 
 export default function Projects() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  // Fetch projects from backend
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (isAuthenticated) {
+      fetchProjects();
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const response = await projectsAPI.getAll();
+      setProjects(response.data || []);
+      setError('');
+    } catch (err: any) {
+      console.error('Error fetching projects:', err);
+      setError('Gagal memuat data proyek');
+      // Fallback to dummy data for demo
+      setProjects(dummyProjects);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter projects
   const filteredProjects = projects.filter((project) => {
@@ -49,11 +86,14 @@ export default function Projects() {
                 <span className="hidden sm:inline">Export PDF</span>
                 <span className="sm:hidden">Export</span>
               </button>
-              <button className="btn-primary flex items-center gap-2 text-sm md:text-base">
+              <Link
+                href="/projects/create"
+                className="btn-primary flex items-center gap-2 text-sm md:text-base"
+              >
                 <Plus size={18} className="md:w-5 md:h-5" />
                 <span className="hidden sm:inline">Tambah Proyek Baru</span>
                 <span className="sm:hidden">Tambah</span>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -123,8 +163,23 @@ export default function Projects() {
           </div>
         </div>
 
-        {/* Projects Grid */}
-        {filteredProjects.length === 0 ? (
+        {/* Loading State */}
+        {loading ? (
+          <div className="card text-center py-12">
+            <Loader className="w-8 h-8 mx-auto text-primary animate-spin" />
+            <p className="text-gray-500 mt-4">Memuat data proyek...</p>
+          </div>
+        ) : error ? (
+          <div className="card text-center py-12">
+            <p className="text-red-500 text-lg">{error}</p>
+            <button
+              onClick={fetchProjects}
+              className="btn-primary mt-4"
+            >
+              Coba Lagi
+            </button>
+          </div>
+        ) : filteredProjects.length === 0 ? (
           <div className="card text-center py-12">
             <p className="text-gray-500 text-lg">
               Tidak ada proyek yang ditemukan

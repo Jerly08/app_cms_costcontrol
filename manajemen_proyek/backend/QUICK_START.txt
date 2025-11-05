@@ -1,0 +1,116 @@
+╔════════════════════════════════════════════════════════════╗
+║  UNIPRO PROJECT MANAGEMENT - BACKEND API                  ║
+║  Quick Start Reference Card                               ║
+╚════════════════════════════════════════════════════════════╝
+
+📋 PREREQUISITES
+───────────────────────────────────────────────────────────
+1. Install Go (Golang) dari https://go.dev/dl/
+2. Install MySQL atau gunakan XAMPP/WAMP
+3. Buat database: CREATE DATABASE unipro_project_management;
+
+
+🚀 CARA MENJALANKAN (3 LANGKAH)
+───────────────────────────────────────────────────────────
+
+1️⃣ Edit file .env (sudah dibuat otomatis)
+   
+   DB_PASSWORD=your_mysql_password_here  ← GANTI INI!
+
+
+2️⃣ Download dependencies
+   
+   go mod download
+
+
+3️⃣ Run server
+   
+   go run cmd/main.go
+   
+   ATAU gunakan shortcut:
+   
+   .\start.ps1
+
+
+✅ JIKA BERHASIL
+───────────────────────────────────────────────────────────
+Anda akan melihat:
+
+🚀 Starting Unipro Project Management API...
+📦 Connecting to MySQL database...
+✓ Database connected successfully
+✓ Database migrations completed successfully
+✓ Default roles seeded successfully
+✅ Server started successfully on http://localhost:8080
+
+
+📡 TEST API
+───────────────────────────────────────────────────────────
+Buka browser:
+
+✓ http://localhost:8080/health
+✓ http://localhost:8080/api/v1/test
+
+
+📊 TABLES CREATED
+───────────────────────────────────────────────────────────
+✓ roles                 (5 default roles)
+✓ users                 (user accounts)
+✓ projects              (construction projects)
+✓ progress_breakdowns   (progress per phase)
+✓ daily_reports         (daily field reports)
+✓ photos                (uploaded images)
+✓ weekly_reports        (weekly summaries)
+
+
+🔧 TROUBLESHOOTING
+───────────────────────────────────────────────────────────
+❌ "go: command not found"
+   → Install Go dari https://go.dev/dl/
+   → Restart PowerShell
+
+❌ "Access denied for user 'root'"
+   → Password salah di file .env
+
+❌ "Database doesn't exist"
+   → Belum buat database
+   → CREATE DATABASE unipro_project_management;
+
+❌ "dial tcp: connectex: No connection"
+   → MySQL belum jalan
+   → Start MySQL service
+
+
+📚 DOCUMENTATION
+───────────────────────────────────────────────────────────
+📖 SETUP_GUIDE.md     - Panduan lengkap setup
+📖 README.md          - Project overview & architecture
+📖 .env.example       - Environment variable template
+
+
+🎯 NEXT STEPS
+───────────────────────────────────────────────────────────
+1. ✅ Backend API berjalan
+2. ⏳ Implement authentication (JWT)
+3. ⏳ Create project endpoints
+4. ⏳ Create daily report endpoints
+5. ⏳ Integrate dengan frontend
+
+
+💡 TIPS
+───────────────────────────────────────────────────────────
+• Stop server: Ctrl + C
+• Lihat database: mysql -u root -p
+• Hot reload: gunakan air (go install github.com/cosmtrek/air@latest)
+
+
+📞 SUPPORT
+───────────────────────────────────────────────────────────
+Jika ada masalah, cek SETUP_GUIDE.md untuk troubleshooting
+detail atau lihat log error di terminal.
+
+
+═══════════════════════════════════════════════════════════
+Backend API ready! 🚀 Happy coding!
+═══════════════════════════════════════════════════════════
+

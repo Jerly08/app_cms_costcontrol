@@ -2,12 +2,24 @@
 export interface Project {
   id: number;
   name: string;
+  description?: string;
+  customer?: string;
+  city?: string;
+  address?: string;
+  projectType?: 'New Build' | 'Renovation' | 'Expansion';
   estimatedCost: number;
   actualCost: number;
   progress: number;
   status: 'On Track' | 'Warning' | 'Over Budget';
   startDate: string;
   endDate: string;
+  deadline?: string;
+  progressBreakdown?: {
+    foundation: number;
+    utilities: number;
+    interior: number;
+    equipment: number;
+  };
 }
 
 export interface Purchase {

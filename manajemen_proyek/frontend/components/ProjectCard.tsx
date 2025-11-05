@@ -1,5 +1,6 @@
 import { Project, formatCurrency, calculateVariance } from '@/lib/dummyData';
 import { TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 
 interface ProjectCardProps {
   project: Project;
@@ -16,7 +17,8 @@ const ProjectCard = ({ project }: ProjectCardProps) => {
   };
 
   return (
-    <div className="card hover:shadow-lg transition-shadow cursor-pointer">
+    <Link href={`/projects/${project.id}`}>
+      <div className="card hover:shadow-lg transition-shadow cursor-pointer">
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-4">
         <div className="flex-1 min-w-0">
@@ -91,6 +93,7 @@ const ProjectCard = ({ project }: ProjectCardProps) => {
         </div>
       </div>
     </div>
+    </Link>
   );
 };
 
