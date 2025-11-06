@@ -174,8 +174,46 @@ func main() {
 				purchaseRequests.POST("/:id/comments", handlers.AddPRComment)
 			}
 			
+			// Materials routes
+			materials := protected.Group("/materials")
+			{
+				materials.GET("", handlers.GetAllMaterials)
+				materials.GET("/low-stock", handlers.GetLowStockMaterials)
+				materials.GET("/:id", handlers.GetMaterialByID)
+				materials.POST("", middleware.RequireRole("purchasing", "manager", "director"), handlers.CreateMaterial)
+				materials.PUT("/:id", middleware.RequireRole("purchasing", "manager", "director"), handlers.UpdateMaterial)
+				materials.DELETE("/:id", middleware.RequireRole("director", "manager"), handlers.DeleteMaterial)
+				materials.PATCH("/:id/stock", middleware.RequireRole("purchasing", "manager", "director"), handlers.UpdateMaterialStock)
+			}
+			
+			// BOM (Bill of Materials) routes
+			bom := protected.Group("/bom")
+			{
+				bom.GET("/:id", handlers.GetBOMByID)
+				bom.POST("", middleware.RequireRole("cost_control", "manager", "director"), handlers.CreateBOM)
+				bom.PUT("/:id", middleware.RequireRole("cost_control", "manager", "director"), handlers.UpdateBOM)
+				bom.DELETE("/:id", middleware.RequireRole("director", "manager"), handlers.DeleteBOM)
+				bom.POST("/import", middleware.RequireRole("cost_control", "manager", "director"), handlers.ImportBOMFromTemplate)
+			}
+			
+			// Project BOM routes
+			protected.GET("/projects/:projectId/bom", handlers.GetBOMByProject)
+			protected.GET("/projects/:projectId/bom/calculate", handlers.CalculateBOMUsage)
+			
+			// Material Usage routes
+			materialUsage := protected.Group("/material-usage")
+			{
+				materialUsage.GET("/:id", handlers.GetMaterialUsageByID)
+				materialUsage.POST("", middleware.RequireRole("tim_lapangan", "manager", "director"), handlers.CreateMaterialUsage)
+				materialUsage.PUT("/:id", middleware.RequireRole("tim_lapangan", "manager", "director"), handlers.UpdateMaterialUsage)
+				materialUsage.DELETE("/:id", middleware.RequireRole("manager", "director"), handlers.DeleteMaterialUsage)
+			}
+			
+			// Project Material Usage routes
+			protected.GET("/projects/:projectId/material-usage", handlers.GetMaterialUsageByProject)
+			protected.GET("/projects/:projectId/material-usage/stats", handlers.GetMaterialUsageStats)
+			
 			// TODO: Users management routes
-			// TODO: Materials management routes
 		}
 	}
 	
