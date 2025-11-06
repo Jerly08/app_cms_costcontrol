@@ -147,8 +147,8 @@ func main() {
 				reports.DELETE("/daily/:id", reportHandler.DeleteDailyReport)
 				
 				// Photo uploads for daily reports
-				reports.POST("/daily/:id/photos", middleware.RequireRole("tim_lapangan", "manager", "director"), photoHandler.UploadPhotos)
-				reports.GET("/daily/:id/photos", photoHandler.GetPhotosByReport)
+				reports.POST("/daily/:id/photos", middleware.RequireRole("tim_lapangan", "manager", "director"), reportHandler.UploadDailyReportPhotos)
+				reports.GET("/daily/:id/photos", reportHandler.GetDailyReportPhotos)
 				
 				// Weekly reports
 				reports.GET("/weekly", reportHandler.GetWeeklyReports)
@@ -160,7 +160,7 @@ func main() {
 			// Photos routes
 			photos := protected.Group("/photos")
 			{
-				photos.DELETE("/:id", photoHandler.DeletePhoto)
+				photos.DELETE("/:photoId", reportHandler.DeletePhoto)
 			}
 			
 			// Purchase Request routes

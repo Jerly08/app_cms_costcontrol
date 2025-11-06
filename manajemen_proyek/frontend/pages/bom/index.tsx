@@ -1,0 +1,314 @@
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
+import Navbar from '@/components/Navbar';
+import Sidebar from '@/components/Sidebar';
+import Table from '@/components/Table';
+import { bomAPI, projectsAPI } from '@/lib/api';
+import { formatCurrency } from '@/lib/dummyData';
+import { FileDown, Upload, Plus, Edit, Trash2, Calculator } from 'lucide-react';
+
+export default function BOMManagement() {
+  const router = useRouter();
+  const { project_id } = router.query;
+  
+  const [bomList, setBomList] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string>(project_id as string || '');
+  const [loading, setLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteBomId, setDeleteBomId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    if (selectedProject) {
+      fetchBOMByProject(selectedProject);
+    }
+  }, [selectedProject]);
+
+  const fetchProjects = async () => {
+    try {
+      const response = await projectsAPI.getAll();
+      setProjects(response.data || []);
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+    }
+  };
+
+  const fetchBOMByProject = async (projectId: string) => {
+    try {
+      setLoading(true);
+      const response = await bomAPI.getByProject(projectId);
+      setBomList(response.data || []);
+    } catch (err) {
+      console.error('Error fetching BOM:', err);
+      setBomList([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteBomId) return;
+
+    try {
+      await bomAPI.delete(deleteBomId);
+      setBomList(bomList.filter(bom => bom.id !== Number(deleteBomId)));
+      setShowDeleteModal(false);
+      setDeleteBomId(null);
+    } catch (err) {
+      console.error('Error deleting BOM:', err);
+      alert('Failed to delete BOM item');
+    }
+  };
+
+  const calculateVariance = (estimated: number, actual: number) => {
+    if (estimated === 0) return 0;
+    return ((actual - estimated) / estimated) * 100;
+  };
+
+  const columns = [
+    {
+      header: 'Material',
+      accessor: 'material',
+      cell: (value: any) => (
+        <div>
+          <div className="font-medium text-gray-900">{value?.name || 'N/A'}</div>
+          <div className="text-xs text-gray-500">{value?.code || ''}</div>
+        </div>
+      ),
+    },
+    {
+      header: 'Category',
+      accessor: 'material',
+      cell: (value: any) => (
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          {value?.category || 'N/A'}
+        </span>
+      ),
+    },
+    {
+      header: 'Estimated Qty',
+      accessor: 'estimated_quantity',
+      cell: (value: number, row: any) => (
+        <span className="text-gray-700">{value} {row.material?.unit || ''}</span>
+      ),
+    },
+    {
+      header: 'Actual Qty',
+      accessor: 'actual_quantity',
+      cell: (value: number, row: any) => (
+        <span className="text-gray-700">{value} {row.material?.unit || ''}</span>
+      ),
+    },
+    {
+      header: 'Estimated Cost',
+      accessor: 'estimated_cost',
+      cell: (value: number) => (
+        <span className="text-gray-700">{formatCurrency(value)}</span>
+      ),
+    },
+    {
+      header: 'Actual Cost',
+      accessor: 'actual_cost',
+      cell: (value: number) => (
+        <span className="text-gray-700">{formatCurrency(value)}</span>
+      ),
+    },
+    {
+      header: 'Variance',
+      accessor: 'variance',
+      cell: (_: any, row: any) => {
+        const variance = calculateVariance(row.estimated_cost, row.actual_cost);
+        const isOver = variance > 0;
+        return (
+          <span
+            className={`font-semibold ${
+              isOver ? 'text-red-600' : 'text-green-600'
+            }`}
+          >
+            {isOver ? '+' : ''}
+            {variance.toFixed(2)}%
+          </span>
+        );
+      },
+    },
+    {
+      header: 'Actions',
+      accessor: 'id',
+      cell: (value: number) => (
+        <div className="flex gap-2">
+          <Link href={`/bom/edit/${value}`}>
+            <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+              <Edit size={16} />
+            </button>
+          </Link>
+          <button
+            onClick={() => {
+              setDeleteBomId(value.toString());
+              setShowDeleteModal(true);
+            }}
+            className="p-1 text-red-600 hover:bg-red-50 rounded"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  // Calculate totals
+  const totalEstimated = bomList.reduce((sum, item) => sum + (item.estimated_cost || 0), 0);
+  const totalActual = bomList.reduce((sum, item) => sum + (item.actual_cost || 0), 0);
+  const totalVariance = calculateVariance(totalEstimated, totalActual);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar />
+      <Navbar />
+
+      <main className="md:ml-64 pt-16 md:pt-20 p-3 sm:p-4 md:p-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">BOM Management</h1>
+          <p className="text-gray-600 mt-1">Bill of Materials - Budget vs Actual</p>
+        </div>
+
+        {/* Project Selector */}
+        <div className="card mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Project
+          </label>
+          <select
+            value={selectedProject}
+            onChange={(e) => setSelectedProject(e.target.value)}
+            className="w-full md:w-96 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+          >
+            <option value="">-- Select a Project --</option>
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {selectedProject && (
+          <>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div className="card">
+                <p className="text-sm text-gray-600 mb-1">Total Estimated</p>
+                <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(totalEstimated)}</h3>
+              </div>
+              <div className="card">
+                <p className="text-sm text-gray-600 mb-1">Total Actual</p>
+                <h3 className="text-2xl font-bold text-gray-900">{formatCurrency(totalActual)}</h3>
+              </div>
+              <div className="card">
+                <p className="text-sm text-gray-600 mb-1">Variance</p>
+                <h3
+                  className={`text-2xl font-bold ${
+                    totalVariance > 0 ? 'text-red-600' : 'text-green-600'
+                  }`}
+                >
+                  {totalVariance > 0 ? '+' : ''}
+                  {totalVariance.toFixed(2)}%
+                </h3>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-wrap gap-3 mb-6">
+              <Link href={`/bom/create?project_id=${selectedProject}`}>
+                <button className="btn-primary flex items-center gap-2">
+                  <Plus size={18} />
+                  Add BOM Item
+                </button>
+              </Link>
+              <Link href={`/bom/import?project_id=${selectedProject}`}>
+                <button className="btn-secondary flex items-center gap-2">
+                  <Upload size={18} />
+                  Import from Excel
+                </button>
+              </Link>
+              <Link href={`/bom/calculate?project_id=${selectedProject}`}>
+                <button className="btn-secondary flex items-center gap-2">
+                  <Calculator size={18} />
+                  Calculate Usage
+                </button>
+              </Link>
+              <button
+                onClick={() => window.print()}
+                className="btn-secondary flex items-center gap-2"
+              >
+                <FileDown size={18} />
+                Export PDF
+              </button>
+            </div>
+
+            {/* BOM Table */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Bill of Materials
+              </h3>
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                  <p className="text-gray-600 mt-4">Loading BOM data...</p>
+                </div>
+              ) : bomList.length > 0 ? (
+                <Table columns={columns} data={bomList} />
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 mb-4">No BOM items found for this project</p>
+                  <Link href={`/bom/create?project_id=${selectedProject}`}>
+                    <button className="btn-primary">Add First BOM Item</button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {!selectedProject && (
+          <div className="card text-center py-12">
+            <p className="text-gray-500">Please select a project to view BOM</p>
+          </div>
+        )}
+      </main>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Confirm Delete
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this BOM item? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteBomId(null);
+                }}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button onClick={handleDelete} className="btn-danger">
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+

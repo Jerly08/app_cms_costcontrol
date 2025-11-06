@@ -23,6 +23,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 
+// Import role-specific dashboards
+import CEODashboard from '@/components/dashboards/CEODashboard';
+import CostControlDashboard from '@/components/dashboards/CostControlDashboard';
+import PurchasingDashboard from '@/components/dashboards/PurchasingDashboard';
+import TimLapanganDashboard from '@/components/dashboards/TimLapanganDashboard';
+
 export default function Dashboard() {
   const [projects, setProjects] = useState<any[]>([]);
   const [dashboardData, setDashboardData] = useState<any>(null);
@@ -163,13 +169,43 @@ export default function Dashboard() {
     },
   ];
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar />
-      <Navbar />
+  // Render role-specific dashboard
+  const renderDashboardContent = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-screen">
+          <Loader className="animate-spin h-12 w-12 text-primary" />
+        </div>
+      );
+    }
 
-      {/* Main Content */}
-      <main className="md:ml-64 pt-16 md:pt-20 p-3 sm:p-4 md:p-6">
+    // Get role name - handle both string and object cases
+    const roleName = typeof user?.role === 'string' ? user.role : user?.role?.name;
+    const userRole = roleName?.toLowerCase();
+
+    // CEO and Director get the executive dashboard
+    if (userRole === 'ceo' || userRole === 'director' || userRole === 'project_director') {
+      return <CEODashboard />;
+    }
+
+    // Cost Control gets cost analysis dashboard
+    if (userRole === 'cost control' || userRole === 'cost_control') {
+      return <CostControlDashboard />;
+    }
+
+    // Purchasing gets procurement dashboard
+    if (userRole === 'purchasing') {
+      return <PurchasingDashboard />;
+    }
+
+    // Tim Lapangan gets field operations dashboard
+    if (userRole === 'tim lapangan' || userRole === 'tim_lapangan' || userRole === 'field') {
+      return <TimLapanganDashboard />;
+    }
+
+    // Default dashboard for other roles (Manager, etc.)
+    return (
+      <>
         {/* Header with Export Button */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 md:mb-6">
           <div>
@@ -346,6 +382,18 @@ export default function Dashboard() {
           </h3>
           <Table columns={columns} data={projects} />
         </div>
+      </>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar />
+      <Navbar />
+
+      {/* Main Content */}
+      <main className="md:ml-64 pt-16 md:pt-20 p-3 sm:p-4 md:p-6">
+        {renderDashboardContent()}
       </main>
     </div>
   );

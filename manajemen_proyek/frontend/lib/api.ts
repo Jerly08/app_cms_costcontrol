@@ -301,6 +301,29 @@ export const bomAPI = {
       method: 'DELETE',
     });
   },
+
+  importExcel: async (file: File, projectId: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('project_id', projectId);
+
+    const token = getToken();
+    const response = await fetch(`${API_URL}/bom/import`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    return handleResponse<{ data: any; imported_count: number }>(response);
+  },
+
+  calculateUsage: async (projectId: string) => {
+    return apiRequest<{ data: any }>(`/projects/${projectId}/bom/calculate`, {
+      method: 'GET',
+    });
+  },
 };
 
 // Material Usage API

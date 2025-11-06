@@ -3,6 +3,8 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -201,6 +203,166 @@ func (h *ReportHandler) DeleteDailyReport(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Daily report deleted successfully"})
 }
 
+// ===== PHOTO UPLOAD =====
+
+// UploadDailyReportPhotos handles photo upload for daily reports
+func (h *ReportHandler) UploadDailyReportPhotos(c *gin.Context) {
+	reportID := c.Param("id")
+	userID, _ := c.Get("user_id")
+
+	// Verify daily report exists
+	var report models.DailyReport
+	if err := h.db.First(&report, reportID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Daily report not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch daily report"})
+		return
+	}
+
+	// Parse multipart form
+	form, err := c.MultipartForm()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse multipart form"})
+		return
+	}
+
+	files := form.File["photos"]
+	if len(files) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No photos provided"})
+		return
+	}
+
+	// Limit number of photos per upload
+	if len(files) > 10 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum 10 photos per upload"})
+		return
+	}
+
+	// Get optional captions
+	captions := form.Value["captions"]
+
+	var uploadedPhotos []models.Photo
+	uploadDir := fmt.Sprintf("./uploads/reports/%s", reportID)
+
+	// Create upload directory if not exists
+	if err := ensureDir(uploadDir); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
+		return
+	}
+
+	for i, file := range files {
+		// Validate file type
+		if !isValidImageType(file.Header.Get("Content-Type")) {
+			continue // Skip non-image files
+		}
+
+		// Validate file size (max 5MB)
+		if file.Size > 5*1024*1024 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("File %s exceeds 5MB limit", file.Filename)})
+			return
+		}
+
+		// Generate unique filename
+		filename := fmt.Sprintf("%d_%s", time.Now().UnixNano(), file.Filename)
+		filePath := fmt.Sprintf("%s/%s", uploadDir, filename)
+
+		// Save file
+		if err := c.SaveUploadedFile(file, filePath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to save file %s", file.Filename)})
+			return
+		}
+
+		// Get caption if provided
+		caption := ""
+		if i < len(captions) {
+			caption = captions[i]
+		}
+
+		// Create photo record
+		photo := models.Photo{
+			DailyReportID: report.ID,
+			Filename:      file.Filename,
+			FilePath:      filePath,
+			FileSize:      file.Size,
+			MimeType:      file.Header.Get("Content-Type"),
+			Caption:       caption,
+			UploadedBy:    userID.(uint),
+		}
+
+		if err := h.db.Create(&photo).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save photo record"})
+			return
+		}
+
+		uploadedPhotos = append(uploadedPhotos, photo)
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Photos uploaded successfully",
+		"data":    uploadedPhotos,
+		"count":   len(uploadedPhotos),
+	})
+}
+
+// GetDailyReportPhotos returns all photos for a daily report
+func (h *ReportHandler) GetDailyReportPhotos(c *gin.Context) {
+	reportID := c.Param("id")
+
+	// Verify daily report exists
+	var report models.DailyReport
+	if err := h.db.First(&report, reportID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Daily report not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch daily report"})
+		return
+	}
+
+	var photos []models.Photo
+	if err := h.db.Preload("Uploader").Where("daily_report_id = ?", reportID).Find(&photos).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch photos"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": photos})
+}
+
+// DeletePhoto deletes a photo
+func (h *ReportHandler) DeletePhoto(c *gin.Context) {
+	photoID := c.Param("photoId")
+	userID, _ := c.Get("user_id")
+
+	var photo models.Photo
+	if err := h.db.First(&photo, photoID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Photo not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch photo"})
+		return
+	}
+
+	// Check if user is the uploader
+	if photo.UploadedBy != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You can only delete your own photos"})
+		return
+	}
+
+	// Delete photo record from database
+	if err := h.db.Delete(&photo).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete photo"})
+		return
+	}
+
+	// TODO: Optionally delete physical file from filesystem
+	// os.Remove(photo.FilePath)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Photo deleted successfully"})
+}
+
 // ===== WEEKLY REPORTS =====
 
 // GetWeeklyReports returns all weekly reports with optional filters
@@ -367,5 +529,31 @@ func (h *ReportHandler) DownloadWeeklyReportPDF(c *gin.Context) {
 	// Serve the PDF file
 	pdfFilePath := "." + pdfPath
 	c.FileAttachment(pdfFilePath, fmt.Sprintf("weekly_report_week%d_%d.pdf", report.WeekNumber, report.Year))
+}
+
+// ===== HELPER FUNCTIONS =====
+
+// ensureDir creates directory if it doesn't exist
+func ensureDir(dirPath string) error {
+	return os.MkdirAll(dirPath, os.ModePerm)
+}
+
+// isValidImageType checks if the MIME type is a valid image format
+func isValidImageType(mimeType string) bool {
+	validTypes := []string{
+		"image/jpeg",
+		"image/jpg",
+		"image/png",
+		"image/gif",
+		"image/webp",
+	}
+	
+	for _, validType := range validTypes {
+		if strings.EqualFold(mimeType, validType) {
+			return true
+		}
+	}
+	
+	return false
 }
 
