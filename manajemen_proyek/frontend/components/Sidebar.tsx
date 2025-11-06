@@ -44,21 +44,21 @@ const Sidebar = () => {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 h-screen w-64 bg-white border-r border-gray-200 z-40
+          fixed top-0 left-0 h-screen w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 z-40
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0
         `}
       >
         {/* Logo */}
-        <div className="px-6 py-6 border-b border-gray-200">
+        <div className="px-6 py-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
               <FolderKanban className="text-white" size={24} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">CostControl</h2>
-              <p className="text-xs text-gray-500">CMS</p>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">CostControl</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">CMS</p>
             </div>
           </div>
         </div>
@@ -80,7 +80,7 @@ const Sidebar = () => {
                       ${
                         active
                           ? 'bg-primary text-white shadow-md'
-                          : 'text-gray-700 hover:bg-gray-100'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                       }
                     `}
                   >
@@ -94,8 +94,8 @@ const Sidebar = () => {
         </nav>
 
         {/* Footer Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
-          <div className="text-xs text-gray-500 text-center">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
             <p>Version 1.1.0</p>
             <p className="mt-1">© 2025 CostControl CMS</p>
           </div>
