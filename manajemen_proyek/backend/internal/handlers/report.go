@@ -27,7 +27,7 @@ func NewReportHandler(db *gorm.DB) *ReportHandler {
 
 // CreateDailyReport creates a new daily report
 func (h *ReportHandler) CreateDailyReport(c *gin.Context) {
-	userID, _ := c.Get("userID")
+	userID, _ := c.Get("user_id")
 
 	var input struct {
 		ProjectID  uint                      `json:"project_id" binding:"required"`
@@ -123,7 +123,7 @@ func (h *ReportHandler) GetDailyReportByID(c *gin.Context) {
 // UpdateDailyReport updates an existing daily report
 func (h *ReportHandler) UpdateDailyReport(c *gin.Context) {
 	id := c.Param("id")
-	userID, _ := c.Get("userID")
+	userID, _ := c.Get("user_id")
 
 	var report models.DailyReport
 	if err := h.db.First(&report, id).Error; err != nil {
@@ -175,7 +175,7 @@ func (h *ReportHandler) UpdateDailyReport(c *gin.Context) {
 // DeleteDailyReport deletes a daily report
 func (h *ReportHandler) DeleteDailyReport(c *gin.Context) {
 	id := c.Param("id")
-	userID, _ := c.Get("userID")
+	userID, _ := c.Get("user_id")
 
 	var report models.DailyReport
 	if err := h.db.First(&report, id).Error; err != nil {
@@ -246,7 +246,7 @@ func (h *ReportHandler) GetWeeklyReportByID(c *gin.Context) {
 
 // GenerateWeeklyReport generates a weekly report from daily reports
 func (h *ReportHandler) GenerateWeeklyReport(c *gin.Context) {
-	userID, _ := c.Get("userID")
+	userID, _ := c.Get("user_id")
 
 	var input struct {
 		ProjectID    uint   `json:"project_id" binding:"required"`
