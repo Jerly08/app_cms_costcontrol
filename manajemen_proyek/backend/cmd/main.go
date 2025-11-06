@@ -163,9 +163,19 @@ func main() {
 				photos.DELETE("/:id", photoHandler.DeletePhoto)
 			}
 			
+			// Purchase Request routes
+			purchaseRequests := protected.Group("/purchase-requests")
+			{
+				purchaseRequests.GET("", handlers.GetPurchaseRequests)
+				purchaseRequests.GET("/:id", handlers.GetPurchaseRequestByID)
+				purchaseRequests.POST("", handlers.CreatePurchaseRequest)
+				purchaseRequests.POST("/:id/approve", handlers.ApprovePurchaseRequest)
+				purchaseRequests.POST("/:id/reject", handlers.RejectPurchaseRequest)
+				purchaseRequests.POST("/:id/comments", handlers.AddPRComment)
+			}
+			
 			// TODO: Users management routes
 			// TODO: Materials management routes
-			// TODO: Purchase Request routes
 		}
 	}
 	

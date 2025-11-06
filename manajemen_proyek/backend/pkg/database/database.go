@@ -63,6 +63,12 @@ func AutoMigrate() error {
 		&models.BOM{},
 		&models.MaterialUsage{},
 		
+		// Purchase Requests
+		&models.PurchaseRequest{},
+		&models.PRItem{},
+		&models.ApprovalHistory{},
+		&models.PRComment{},
+		
 		// Approvals & Notifications
 		&models.Approval{},
 		&models.Notification{},
