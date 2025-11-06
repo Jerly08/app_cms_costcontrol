@@ -1,10 +1,87 @@
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
-import { Users, UserPlus, Search, Shield } from 'lucide-react';
-import { useState } from 'react';
+import { Users, UserPlus, Search, Shield, Lock } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function UserManagement() {
+  const router = useRouter();
+  const { user, isAuthenticated, loading } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    // Check if user is CEO/Director
+    if (!loading && isAuthenticated && user) {
+      const allowedRoles = ['director', 'ceo'];
+      const userRole = user.role?.slug || user.role?.name?.toLowerCase() || '';
+      
+      if (!allowedRoles.includes(userRole)) {
+        // Redirect to dashboard if not authorized
+        router.push('/');
+        return;
+      }
+    }
+  }, [isAuthenticated, loading, user, router]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Sidebar />
+        <Navbar />
+        <main className="md:ml-64 pt-16 md:pt-20 p-3 sm:p-4 md:p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show access denied if not CEO/Director
+  if (user) {
+    const allowedRoles = ['director', 'ceo'];
+    const userRole = user.role?.slug || user.role?.name?.toLowerCase() || '';
+    
+    if (!allowedRoles.includes(userRole)) {
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <Sidebar />
+          <Navbar />
+          <main className="md:ml-64 pt-16 md:pt-20 p-3 sm:p-4 md:p-6">
+            <div className="max-w-md mx-auto mt-20">
+              <div className="bg-white rounded-lg shadow-lg border border-red-200 p-8 text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Lock className="text-red-600" size={32} />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+                <p className="text-gray-600 mb-6">
+                  This page is only accessible to CEO/Director.
+                  <br />
+                  Your role: <span className="font-semibold text-gray-900">{user.role?.name || 'Unknown'}</span>
+                </p>
+                <button
+                  onClick={() => router.push('/')}
+                  className="btn-primary"
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            </div>
+          </main>
+        </div>
+      );
+    }
+  }
 
   // Dummy users data
   const users = [
@@ -17,9 +94,9 @@ export default function UserManagement() {
     { id: 7, name: 'Tim Lapangan', email: 'lapangan@unipro.com', role: 'Tim Lapangan', status: 'Active' },
   ];
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(u =>
+    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getRoleBadgeColor = (role: string) => {
@@ -136,31 +213,31 @@ export default function UserManagement() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
+                  {filteredUsers.map((userItem) => (
+                    <tr key={userItem.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                             <span className="text-blue-600 font-semibold">
-                              {user.name.charAt(0).toUpperCase()}
+                              {userItem.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                            <div className="text-sm font-medium text-gray-900">{userItem.name}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{user.email}</div>
+                        <div className="text-sm text-gray-900">{userItem.email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
-                          {user.role}
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(userItem.role)}`}>
+                          {userItem.role}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                          {user.status}
+                          {userItem.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

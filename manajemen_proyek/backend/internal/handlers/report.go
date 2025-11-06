@@ -3,20 +3,24 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/unipro/project-management/internal/models"
+	"github.com/unipro/project-management/pkg/pdf"
 	"gorm.io/gorm"
 )
 
 type ReportHandler struct {
-	db *gorm.DB
+	db           *gorm.DB
+	pdfGenerator *pdf.WeeklyReportPDFGenerator
 }
 
 func NewReportHandler(db *gorm.DB) *ReportHandler {
-	return &ReportHandler{db: db}
+	return &ReportHandler{
+		db:           db,
+		pdfGenerator: pdf.NewWeeklyReportPDFGenerator(db),
+	}
 }
 
 // ===== DAILY REPORTS =====
@@ -326,7 +330,7 @@ func (h *ReportHandler) DownloadWeeklyReportPDF(c *gin.Context) {
 	id := c.Param("id")
 
 	var report models.WeeklyReport
-	if err := h.db.Preload("Project").First(&report, id).Error; err != nil {
+	if err := h.db.Preload("Project").Preload("Generator").First(&report, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Weekly report not found"})
 			return
@@ -335,26 +339,33 @@ func (h *ReportHandler) DownloadWeeklyReportPDF(c *gin.Context) {
 		return
 	}
 
-	// TODO: Implement PDF generation
-	// For now, return a placeholder response
-	c.JSON(http.StatusNotImplemented, gin.H{
-		"error": "PDF generation not implemented yet",
-		"note": "Will implement using go-pdf or wkhtmltopdf library",
-		"data": report,
-	})
+	// Check if PDF already exists
+	if report.PDFPath != "" {
+		// Serve existing PDF
+		pdfFilePath := "." + report.PDFPath
+		c.FileAttachment(pdfFilePath, fmt.Sprintf("weekly_report_week%d_%d.pdf", report.WeekNumber, report.Year))
+		return
+	}
 
-	// Future implementation:
-	// 1. Use go-pdf library or wkhtmltopdf
-	// 2. Generate PDF with report data
-	// 3. Save to file system or S3
-	// 4. Return PDF file as response
-	// 
-	// Example:
-	// pdfPath := fmt.Sprintf("./uploads/reports/weekly_%d.pdf", report.ID)
-	// if err := generatePDF(&report, pdfPath); err != nil {
-	//     c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate PDF"})
-	//     return
-	// }
-	// c.File(pdfPath)
+	// Generate new PDF
+	pdfPath, err := h.pdfGenerator.GenerateWeeklyReportPDF(&report)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to generate PDF",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Save PDF path to database
+	report.PDFPath = pdfPath
+	if err := h.db.Save(&report).Error; err != nil {
+		// Continue even if DB update fails - PDF is already generated
+		fmt.Printf("Warning: Failed to update PDF path in database: %v\n", err)
+	}
+
+	// Serve the PDF file
+	pdfFilePath := "." + pdfPath
+	c.FileAttachment(pdfFilePath, fmt.Sprintf("weekly_report_week%d_%d.pdf", report.WeekNumber, report.Year))
 }
 

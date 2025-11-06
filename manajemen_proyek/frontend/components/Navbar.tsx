@@ -12,6 +12,14 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const router = useRouter();
 
+  // Check if user is CEO/Director
+  const isCEO = () => {
+    if (!user) return false;
+    const allowedRoles = ['director', 'ceo'];
+    const userRole = user.role?.slug || user.role?.name?.toLowerCase() || '';
+    return allowedRoles.includes(userRole);
+  };
+
   // Fetch unread notification count
   useEffect(() => {
     const fetchUnreadCount = async () => {
@@ -125,22 +133,30 @@ const Navbar = () => {
                     <LayoutDashboard size={16} className="text-gray-500" />
                     <span>Dashboard</span>
                   </Link>
-                  <Link
-                    href="/technical-data"
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    onClick={() => setIsDropdownOpen(false)}
-                  >
-                    <Database size={16} className="text-gray-500" />
-                    <span>Technical Data</span>
-                  </Link>
-                  <Link
-                    href="/user-management"
-                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    onClick={() => setIsDropdownOpen(false)}
-                  >
-                    <Users size={16} className="text-gray-500" />
-                    <span>User Management</span>
-                  </Link>
+                  
+                  {/* Technical Data - Only for CEO/Director */}
+                  {isCEO() && (
+                    <Link
+                      href="/technical-data"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      <Database size={16} className="text-gray-500" />
+                      <span>Technical Data</span>
+                    </Link>
+                  )}
+                  
+                  {/* User Management - Only for CEO/Director */}
+                  {isCEO() && (
+                    <Link
+                      href="/user-management"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      <Users size={16} className="text-gray-500" />
+                      <span>User Management</span>
+                    </Link>
+                  )}
                 </div>
 
                 {/* Sign Out */}

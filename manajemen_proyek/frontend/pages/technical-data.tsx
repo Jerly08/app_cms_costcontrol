@@ -1,8 +1,86 @@
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
-import { Database, HardDrive, Server, Activity } from 'lucide-react';
+import { Database, HardDrive, Server, Activity, Lock } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function TechnicalData() {
+  const router = useRouter();
+  const { user, isAuthenticated, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    // Check if user is CEO/Director
+    if (!loading && isAuthenticated && user) {
+      const allowedRoles = ['director', 'ceo'];
+      const userRole = user.role?.slug || user.role?.name?.toLowerCase() || '';
+      
+      if (!allowedRoles.includes(userRole)) {
+        // Redirect to dashboard if not authorized
+        router.push('/');
+        return;
+      }
+    }
+  }, [isAuthenticated, loading, user, router]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Sidebar />
+        <Navbar />
+        <main className="md:ml-64 pt-16 md:pt-20 p-3 sm:p-4 md:p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show access denied if not CEO/Director
+  if (user) {
+    const allowedRoles = ['director', 'ceo'];
+    const userRole = user.role?.slug || user.role?.name?.toLowerCase() || '';
+    
+    if (!allowedRoles.includes(userRole)) {
+      return (
+        <div className="min-h-screen bg-gray-50">
+          <Sidebar />
+          <Navbar />
+          <main className="md:ml-64 pt-16 md:pt-20 p-3 sm:p-4 md:p-6">
+            <div className="max-w-md mx-auto mt-20">
+              <div className="bg-white rounded-lg shadow-lg border border-red-200 p-8 text-center">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Lock className="text-red-600" size={32} />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+                <p className="text-gray-600 mb-6">
+                  This page is only accessible to CEO/Director.
+                  <br />
+                  Your role: <span className="font-semibold text-gray-900">{user.role?.name || 'Unknown'}</span>
+                </p>
+                <button
+                  onClick={() => router.push('/')}
+                  className="btn-primary"
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            </div>
+          </main>
+        </div>
+      );
+    }
+  }
   const technicalInfo = [
     {
       icon: Database,

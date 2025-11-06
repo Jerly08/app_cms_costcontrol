@@ -1,0 +1,179 @@
+package pdf
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/jung-kurt/gofpdf"
+	"github.com/unipro/project-management/internal/models"
+	"gorm.io/gorm"
+)
+
+const (
+	pdfOutputDir = "./uploads/reports"
+	pdfMargin    = 10.0
+	pdfFontSize  = 12.0
+)
+
+// WeeklyReportPDFGenerator generates PDF for weekly reports
+type WeeklyReportPDFGenerator struct {
+	db *gorm.DB
+}
+
+// NewWeeklyReportPDFGenerator creates a new PDF generator
+func NewWeeklyReportPDFGenerator(db *gorm.DB) *WeeklyReportPDFGenerator {
+	// Create output directory if not exists
+	if err := os.MkdirAll(pdfOutputDir, 0755); err != nil {
+		fmt.Printf("Warning: Could not create PDF output directory: %v\n", err)
+	}
+	return &WeeklyReportPDFGenerator{db: db}
+}
+
+// GenerateWeeklyReportPDF generates a PDF file for a weekly report
+func (g *WeeklyReportPDFGenerator) GenerateWeeklyReportPDF(report *models.WeeklyReport) (string, error) {
+	// Initialize PDF
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.SetMargins(pdfMargin, pdfMargin, pdfMargin)
+	pdf.AddPage()
+
+	// Title
+	pdf.SetFont("Arial", "B", 20)
+	pdf.CellFormat(0, 10, "WEEKLY REPORT", "0", 1, "C", false, 0, "")
+	pdf.Ln(5)
+
+	// Project Info Section
+	pdf.SetFont("Arial", "B", 14)
+	pdf.CellFormat(0, 8, "Project Information", "0", 1, "L", false, 0, "")
+	pdf.SetFont("Arial", "", pdfFontSize)
+	
+	if report.Project != nil {
+		g.addRow(pdf, "Project Name:", report.Project.Name)
+		location := report.Project.City
+		if report.Project.Address != "" {
+			location = report.Project.City + ", " + report.Project.Address
+		}
+		g.addRow(pdf, "Location:", location)
+		g.addRow(pdf, "Client:", report.Project.Customer)
+	}
+	
+	g.addRow(pdf, "Week Number:", fmt.Sprintf("Week %d, %d", report.WeekNumber, report.Year))
+	g.addRow(pdf, "Period:", fmt.Sprintf("%s - %s", 
+		report.StartDate.Format("02 Jan 2006"), 
+		report.EndDate.Format("02 Jan 2006")))
+	
+	pdf.Ln(5)
+
+	// Progress Section
+	pdf.SetFont("Arial", "B", 14)
+	pdf.CellFormat(0, 8, "Progress Summary", "0", 1, "L", false, 0, "")
+	pdf.SetFont("Arial", "", pdfFontSize)
+	g.addRow(pdf, "Overall Progress:", fmt.Sprintf("%.2f%%", report.TotalProgress))
+	pdf.Ln(3)
+
+	// Get daily reports for this week
+	var dailyReports []models.DailyReport
+	g.db.Where("project_id = ? AND date >= ? AND date <= ?", 
+		report.ProjectID, report.StartDate, report.EndDate).
+		Order("date ASC").
+		Find(&dailyReports)
+
+	if len(dailyReports) > 0 {
+		pdf.SetFont("Arial", "B", 12)
+		pdf.CellFormat(0, 6, "Daily Reports:", "0", 1, "L", false, 0, "")
+		pdf.SetFont("Arial", "", 10)
+		
+		// Table header
+		pdf.SetFillColor(200, 200, 200)
+		pdf.CellFormat(30, 7, "Date", "1", 0, "C", true, 0, "")
+		pdf.CellFormat(20, 7, "Workers", "1", 0, "C", true, 0, "")
+		pdf.CellFormat(25, 7, "Progress", "1", 0, "C", true, 0, "")
+		pdf.CellFormat(25, 7, "Weather", "1", 0, "C", true, 0, "")
+		pdf.CellFormat(90, 7, "Activities", "1", 1, "C", true, 0, "")
+
+		// Table rows
+		pdf.SetFillColor(255, 255, 255)
+		for _, dr := range dailyReports {
+			// Truncate activities if too long
+			activities := dr.Activities
+			if len(activities) > 80 {
+				activities = activities[:77] + "..."
+			}
+			
+			pdf.CellFormat(30, 7, dr.Date.Format("02 Jan 2006"), "1", 0, "L", false, 0, "")
+			pdf.CellFormat(20, 7, fmt.Sprintf("%d", dr.Workers), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(25, 7, fmt.Sprintf("%.1f%%", dr.Progress), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(25, 7, string(dr.Weather), "1", 0, "C", false, 0, "")
+			pdf.CellFormat(90, 7, activities, "1", 1, "L", false, 0, "")
+		}
+		pdf.Ln(5)
+	}
+
+	// Summary Section
+	if report.Summary != "" {
+		pdf.SetFont("Arial", "B", 14)
+		pdf.CellFormat(0, 8, "Summary", "0", 1, "L", false, 0, "")
+		pdf.SetFont("Arial", "", pdfFontSize)
+		pdf.MultiCell(0, 5, report.Summary, "0", "L", false)
+		pdf.Ln(3)
+	}
+
+	// Achievements Section
+	if report.Achievements != "" {
+		pdf.SetFont("Arial", "B", 14)
+		pdf.CellFormat(0, 8, "Achievements", "0", 1, "L", false, 0, "")
+		pdf.SetFont("Arial", "", pdfFontSize)
+		pdf.MultiCell(0, 5, report.Achievements, "0", "L", false)
+		pdf.Ln(3)
+	}
+
+	// Issues Section
+	if report.Issues != "" {
+		pdf.SetFont("Arial", "B", 14)
+		pdf.CellFormat(0, 8, "Issues & Challenges", "0", 1, "L", false, 0, "")
+		pdf.SetFont("Arial", "", pdfFontSize)
+		pdf.MultiCell(0, 5, report.Issues, "0", "L", false)
+		pdf.Ln(3)
+	}
+
+	// Next Week Plan Section
+	if report.NextWeekPlan != "" {
+		pdf.SetFont("Arial", "B", 14)
+		pdf.CellFormat(0, 8, "Next Week Plan", "0", 1, "L", false, 0, "")
+		pdf.SetFont("Arial", "", pdfFontSize)
+		pdf.MultiCell(0, 5, report.NextWeekPlan, "0", "L", false)
+		pdf.Ln(3)
+	}
+
+	// Footer
+	pdf.Ln(10)
+	pdf.SetFont("Arial", "I", 10)
+	generatedAt := time.Now().Format("02 January 2006 15:04")
+	pdf.CellFormat(0, 5, fmt.Sprintf("Generated on: %s", generatedAt), "0", 1, "L", false, 0, "")
+	
+	if report.Generator != nil {
+		pdf.CellFormat(0, 5, fmt.Sprintf("Generated by: %s", report.Generator.Name), "0", 1, "L", false, 0, "")
+	}
+
+	// Save PDF
+	filename := fmt.Sprintf("weekly_report_%d_week%d_%d.pdf", report.ProjectID, report.WeekNumber, report.Year)
+	pdfPath := filepath.Join(pdfOutputDir, filename)
+	
+	if err := pdf.OutputFileAndClose(pdfPath); err != nil {
+		return "", fmt.Errorf("failed to save PDF: %v", err)
+	}
+
+	// Return relative path for storage
+	relativePath := fmt.Sprintf("/uploads/reports/%s", filename)
+	return relativePath, nil
+}
+
+// addRow adds a key-value row to the PDF
+func (g *WeeklyReportPDFGenerator) addRow(pdf *gofpdf.Fpdf, label, value string) {
+	pdf.SetFont("Arial", "B", pdfFontSize)
+	pdf.CellFormat(50, 6, label, "0", 0, "L", false, 0, "")
+	pdf.SetFont("Arial", "", pdfFontSize)
+	pdf.CellFormat(0, 6, value, "0", 1, "L", false, 0, "")
+}
+
