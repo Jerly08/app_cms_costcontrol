@@ -12,10 +12,18 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const router = useRouter();
 
-  // Check if user is CEO/Director
+  // Check if user is CEO (only CEO has access to Technical Data)
   const isCEO = () => {
     if (!user) return false;
-    const allowedRoles = ['director', 'ceo'];
+    const allowedRoles = ['ceo'];
+    const userRole = user.role?.slug || user.role?.name?.toLowerCase() || '';
+    return allowedRoles.includes(userRole);
+  };
+
+  // Check if user has access to User Management (CEO, Director, Project Director)
+  const canManageUsers = () => {
+    if (!user) return false;
+    const allowedRoles = ['ceo', 'director', 'project_director'];
     const userRole = user.role?.slug || user.role?.name?.toLowerCase() || '';
     return allowedRoles.includes(userRole);
   };
@@ -134,7 +142,7 @@ const Navbar = () => {
                     <span>Dashboard</span>
                   </Link>
                   
-                  {/* Technical Data - Only for CEO/Director */}
+                  {/* Technical Data - Only for CEO */}
                   {isCEO() && (
                     <Link
                       href="/technical-data"
@@ -146,8 +154,8 @@ const Navbar = () => {
                     </Link>
                   )}
                   
-                  {/* User Management - Only for CEO/Director */}
-                  {isCEO() && (
+                  {/* User Management - For CEO, Director, and Project Director */}
+                  {canManageUsers() && (
                     <Link
                       href="/user-management"
                       className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
