@@ -1,12 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, AlertCircle, Loader } from 'lucide-react';
 import Link from 'next/link';
+import { projectsAPI } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function CreateProject() {
   const router = useRouter();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -15,13 +20,20 @@ export default function CreateProject() {
     address: '',
     projectType: 'New Build',
     budget: '',
-    deadline: '',
+    startDate: '',
+    endDate: '',
     overallProgress: 0,
     foundation: 0,
     utilities: 0,
     interior: 0,
     equipment: 0,
   });
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isAuthenticated, authLoading, router]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -33,12 +45,73 @@ export default function CreateProject() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement API call to save project
-    console.log('Project data:', formData);
-    alert('Proyek berhasil dibuat! (Demo Mode)');
-    router.push('/projects');
+    setLoading(true);
+    setError('');
+
+    try {
+      // Validate dates
+      if (formData.startDate && formData.endDate) {
+        const start = new Date(formData.startDate);
+        const end = new Date(formData.endDate);
+        if (end < start) {
+          setError('End Date harus setelah Start Date');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Convert budget to number if it's a string
+      const budgetValue = formData.budget 
+        ? (typeof formData.budget === 'string' 
+          ? parseFloat(formData.budget.replace(/[^0-9.]/g, '')) 
+          : formData.budget)
+        : 0;
+
+      const projectData = {
+        name: formData.name,
+        description: formData.description || '',
+        customer: formData.customer || '',
+        city: formData.city || '',
+        address: formData.address || '',
+        project_type: formData.projectType,
+        estimated_cost: budgetValue,
+        start_date: formData.startDate,
+        end_date: formData.endDate,
+        progress: {
+          overall: formData.overallProgress || 0,
+          foundation: formData.foundation || 0,
+          utilities: formData.utilities || 0,
+          interior: formData.interior || 0,
+          equipment: formData.equipment || 0,
+        },
+      };
+
+      console.log('Sending project data:', projectData);
+      
+      const response = await projectsAPI.create(projectData);
+      console.log('Project created successfully:', response);
+      
+      alert('Proyek berhasil dibuat!');
+      router.push('/projects');
+    } catch (err: any) {
+      console.error('Error creating project:', err);
+      console.error('Error details:', err.response || err);
+      
+      // Extract more detailed error message
+      let errorMessage = 'Gagal membuat proyek. Silakan coba lagi.';
+      if (err.message) {
+        errorMessage = err.message;
+      }
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -67,6 +140,13 @@ export default function CreateProject() {
             <h1 className="text-2xl font-bold text-gray-900 mb-6">
               Create New Project
             </h1>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
+                <AlertCircle size={20} />
+                <span>{error}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Project Name */}
@@ -208,22 +288,42 @@ export default function CreateProject() {
                 </div>
               </div>
 
-              {/* Deadline */}
-              <div>
-                <label
-                  htmlFor="deadline"
-                  className="block text-sm font-medium text-gray-900 mb-2"
-                >
-                  Deadline
-                </label>
-                <input
-                  type="date"
-                  id="deadline"
-                  name="deadline"
-                  value={formData.deadline}
-                  onChange={handleChange}
-                  className="input-field"
-                />
+              {/* Start Date & End Date */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="startDate"
+                    className="block text-sm font-medium text-gray-900 mb-2"
+                  >
+                    Start Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    id="startDate"
+                    name="startDate"
+                    value={formData.startDate}
+                    onChange={handleChange}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="endDate"
+                    className="block text-sm font-medium text-gray-900 mb-2"
+                  >
+                    End Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    id="endDate"
+                    name="endDate"
+                    value={formData.endDate}
+                    onChange={handleChange}
+                    className="input-field"
+                    required
+                  />
+                </div>
               </div>
 
               {/* Progress Breakdown */}
@@ -341,9 +441,17 @@ export default function CreateProject() {
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary"
+                  disabled={loading}
+                  className="btn-primary flex items-center gap-2"
                 >
-                  Create Project
+                  {loading ? (
+                    <>
+                      <Loader className="animate-spin" size={18} />
+                      Membuat...
+                    </>
+                  ) : (
+                    'Create Project'
+                  )}
                 </button>
               </div>
             </form>

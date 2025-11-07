@@ -1,12 +1,23 @@
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 import Table from '@/components/Table';
-import { projects, purchases, formatCurrency } from '@/lib/dummyData';
-import { ShoppingCart, Plus, TrendingDown, TrendingUp, FileDown } from 'lucide-react';
-import { useState } from 'react';
+import { projects as dummyProjects, purchases as dummyPurchases, formatCurrency } from '@/lib/dummyData';
+import { ShoppingCart, Plus, TrendingDown, TrendingUp, FileDown, Loader } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { exportPurchasingPDF } from '@/lib/pdfExport';
+import { projectsAPI, purchaseRequestAPI } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/router';
 
 export default function Purchasing() {
+  const router = useRouter();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [purchases, setPurchases] = useState<any[]>([]);
+  const [error, setError] = useState('');
+  
   const [formData, setFormData] = useState({
     projectId: '',
     material: '',
@@ -17,20 +28,99 @@ export default function Purchasing() {
     vendor: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch projects
+      const projectsResponse = await projectsAPI.getAll();
+      setProjects(projectsResponse.data || []);
+
+      // Fetch purchase requests
+      const purchasesResponse = await purchaseRequestAPI.getAll();
+      // Transform purchase request data to match the table format
+      const transformedPurchases = (purchasesResponse.data || []).map((pr: any) => ({
+        id: pr.id,
+        projectName: pr.project?.name || 'Unknown Project',
+        material: pr.items?.[0]?.material_name || 'Multiple Items',
+        quantity: pr.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
+        unit: pr.items?.[0]?.unit || '',
+        estimatedPrice: pr.items?.[0]?.estimated_price || 0,
+        actualPrice: pr.items?.[0]?.actual_price || pr.items?.[0]?.estimated_price || 0,
+        vendor: pr.items?.[0]?.vendor || '-',
+        date: new Date(pr.created_at).toLocaleDateString('id-ID'),
+      }));
+      setPurchases(transformedPurchases);
+    } catch (err: any) {
+      console.error('Error fetching data:', err);
+      // Fallback to dummy data
+      setProjects(dummyProjects);
+      setPurchases(dummyPurchases);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Form submission logic akan ditambahkan nanti
-    alert('Pembelian berhasil ditambahkan! (Demo)');
-    // Reset form
-    setFormData({
-      projectId: '',
-      material: '',
-      quantity: '',
-      unit: '',
-      estimatedPrice: '',
-      actualPrice: '',
-      vendor: '',
-    });
+    setSubmitLoading(true);
+    setError('');
+
+    try {
+      // Create a purchase request with the form data
+      const prData = {
+        project_id: parseInt(formData.projectId),
+        title: `Pembelian ${formData.material}`,
+        description: `Purchase request untuk ${formData.material}`,
+        priority: 'normal',
+        items: [
+          {
+            material_id: 0, // This should be selected from materials
+            material_name: formData.material,
+            quantity: parseFloat(formData.quantity),
+            unit: formData.unit,
+            estimated_price: parseFloat(formData.estimatedPrice),
+            actual_price: parseFloat(formData.actualPrice),
+            vendor: formData.vendor,
+            notes: '',
+          },
+        ],
+      };
+
+      await purchaseRequestAPI.create(prData);
+      alert('Pembelian berhasil ditambahkan!');
+      
+      // Reset form
+      setFormData({
+        projectId: '',
+        material: '',
+        quantity: '',
+        unit: '',
+        estimatedPrice: '',
+        actualPrice: '',
+        vendor: '',
+      });
+
+      // Refresh data
+      fetchData();
+    } catch (err: any) {
+      console.error('Error creating purchase:', err);
+      setError(err.message || 'Gagal menambahkan pembelian');
+      alert('Gagal menambahkan pembelian: ' + (err.message || 'Terjadi kesalahan'));
+    } finally {
+      setSubmitLoading(false);
+    }
   };
 
   const handleChange = (
@@ -336,9 +426,22 @@ export default function Purchasing() {
               </div>
 
               <div className="flex items-end">
-                <button type="submit" className="btn-primary w-full">
-                  <Plus size={20} className="inline mr-2" />
-                  Tambah
+                <button 
+                  type="submit" 
+                  disabled={submitLoading}
+                  className="btn-primary w-full flex items-center justify-center gap-2"
+                >
+                  {submitLoading ? (
+                    <>
+                      <Loader className="animate-spin" size={20} />
+                      Menambah...
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={20} />
+                      Tambah
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -350,7 +453,18 @@ export default function Purchasing() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Daftar Pembelian Material
           </h2>
-          <Table columns={columns} data={purchases} />
+          {loading ? (
+            <div className="text-center py-12">
+              <Loader className="w-8 h-8 mx-auto text-primary animate-spin" />
+              <p className="text-gray-500 mt-4">Memuat data...</p>
+            </div>
+          ) : purchases.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Belum ada data pembelian</p>
+            </div>
+          ) : (
+            <Table columns={columns} data={purchases} />
+          )}
         </div>
       </main>
     </div>

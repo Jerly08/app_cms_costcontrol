@@ -131,7 +131,7 @@ export default function Materials() {
       cell: (value: number) => (
         <div className="flex items-center gap-2">
           <button
-            onClick={() => router.push(`/materials/${value}`)}
+            onClick={() => router.push(`/materials/${value}/edit`)}
             className="text-blue-600 hover:text-blue-700"
           >
             <Edit size={16} />

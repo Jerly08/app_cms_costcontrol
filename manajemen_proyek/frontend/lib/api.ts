@@ -340,6 +340,19 @@ export const materialUsageAPI = {
       body: JSON.stringify(usageData),
     });
   },
+
+  update: async (id: string, usageData: any) => {
+    return apiRequest<{ data: any }>(`/material-usage/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(usageData),
+    });
+  },
+
+  delete: async (id: string) => {
+    return apiRequest<{ message: string }>(`/material-usage/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // Purchase Request API

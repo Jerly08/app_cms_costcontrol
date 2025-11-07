@@ -94,21 +94,21 @@ export default function Dashboard() {
       header: 'Nama Proyek',
       accessor: 'name',
       cell: (value: string) => (
-        <div className="font-medium text-gray-900">{value}</div>
+        <div className="font-medium text-gray-900 dark:text-gray-100">{value}</div>
       ),
     },
     {
       header: 'Estimasi',
       accessor: 'estimatedCost',
       cell: (value: number) => (
-        <span className="text-gray-700">{formatCurrency(value)}</span>
+        <span className="text-gray-700 dark:text-gray-300">{formatCurrency(value)}</span>
       ),
     },
     {
       header: 'Aktual',
       accessor: 'actualCost',
       cell: (value: number) => (
-        <span className="text-gray-700">{formatCurrency(value)}</span>
+        <span className="text-gray-700 dark:text-gray-300">{formatCurrency(value)}</span>
       ),
     },
     {
@@ -137,13 +137,13 @@ export default function Dashboard() {
       accessor: 'progress',
       cell: (value: number) => (
         <div className="flex items-center gap-2">
-          <div className="w-24 bg-gray-200 rounded-full h-2">
+          <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div
               className="bg-primary h-2 rounded-full"
               style={{ width: `${value}%` }}
             />
           </div>
-          <span className="text-sm text-gray-600">{value}%</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">{value}%</span>
         </div>
       ),
     },
@@ -209,8 +209,8 @@ export default function Dashboard() {
         {/* Header with Export Button */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 md:mb-6">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-sm md:text-base text-gray-600 mt-1">Overview seluruh proyek</p>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1">Overview seluruh proyek</p>
           </div>
           <button
             onClick={() =>
@@ -234,8 +234,8 @@ export default function Dashboard() {
           <div className="card">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0 mr-2">
-                <p className="text-xs md:text-sm text-gray-600 mb-1">Total Estimasi</p>
-                <h3 className="text-lg md:text-2xl font-bold text-gray-900 truncate">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">Total Estimasi</p>
+                <h3 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">
                   {formatCurrency(totalEstimated)}
                 </h3>
               </div>
@@ -249,8 +249,8 @@ export default function Dashboard() {
           <div className="card">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0 mr-2">
-                <p className="text-xs md:text-sm text-gray-600 mb-1">Total Aktual</p>
-                <h3 className="text-lg md:text-2xl font-bold text-gray-900 truncate">
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">Total Aktual</p>
+                <h3 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">
                   {formatCurrency(totalActual)}
                 </h3>
               </div>
@@ -264,7 +264,7 @@ export default function Dashboard() {
           <div className="card">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0 mr-2">
-                <p className="text-xs md:text-sm text-gray-600 mb-1">Variance Total</p>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">Variance Total</p>
                 <h3
                   className={`text-lg md:text-2xl font-bold ${
                     totalVariance > 0 ? 'text-red-600' : 'text-green-600'
@@ -291,19 +291,19 @@ export default function Dashboard() {
           <div className="card">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0 mr-2">
-                <p className="text-xs md:text-sm text-gray-600 mb-1">Status Proyek</p>
+                <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-1">Status Proyek</p>
                 <div className="flex items-center gap-2 md:gap-3">
                   <div>
                     <span className="text-green-600 font-bold text-lg md:text-xl">
                       {onTrackProjects}
                     </span>
-                    <span className="text-xs text-gray-500 ml-1">On Track</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">On Track</span>
                   </div>
                   <div>
                     <span className="text-red-600 font-bold text-lg md:text-xl">
                       {warningProjects}
                     </span>
-                    <span className="text-xs text-gray-500 ml-1">Warning</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">Warning</span>
                   </div>
                 </div>
               </div>
@@ -318,7 +318,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
           {/* Estimasi vs Aktual Chart */}
           <div className="lg:col-span-2 card">
-            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">
               Perbandingan Estimasi vs Aktual per Proyek
             </h3>
             <Chart
@@ -335,7 +335,7 @@ export default function Dashboard() {
 
           {/* Budget Control */}
           <div className="card">
-            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3 md:mb-4">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white mb-3 md:mb-4">
               Budget Control
             </h3>
             <div className="space-y-4">
@@ -346,7 +346,7 @@ export default function Dashboard() {
                 return (
                   <div key={bc.id}>
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         {bc.material}
                       </span>
                       <span
@@ -357,7 +357,7 @@ export default function Dashboard() {
                         {percentage.toFixed(0)}%
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full ${
                           isOver ? 'bg-red-500' : 'bg-green-500'
@@ -365,7 +365,7 @@ export default function Dashboard() {
                         style={{ width: `${Math.min(percentage, 100)}%` }}
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       {bc.actualVolume} / {bc.estimatedVolume} {bc.unit}
                     </p>
                   </div>
@@ -377,7 +377,7 @@ export default function Dashboard() {
 
         {/* Projects Table */}
         <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Daftar Proyek
           </h3>
           <Table columns={columns} data={projects} />

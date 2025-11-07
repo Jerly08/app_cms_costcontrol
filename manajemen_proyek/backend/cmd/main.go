@@ -79,7 +79,6 @@ func main() {
 	projectHandler := handlers.NewProjectHandler(db)
 	dashboardHandler := handlers.NewDashboardHandler(db)
 	reportHandler := handlers.NewReportHandler(db)
-	photoHandler := handlers.NewPhotoHandler(db)
 	
 	// API v1 routes group
 	v1 := router.Group("/api/v1")
@@ -115,6 +114,14 @@ func main() {
 				
 				// Tim lapangan can update progress
 				projects.PATCH("/:id/progress", middleware.RequireRole("director", "manager", "tim_lapangan"), projectHandler.UpdateProgress)
+				
+				// Project-specific BOM routes
+				projects.GET("/:id/bom", handlers.GetBOMByProject)
+				projects.GET("/:id/bom/calculate", handlers.CalculateBOMUsage)
+				
+				// Project-specific Material Usage routes
+				projects.GET("/:id/material-usage", handlers.GetMaterialUsageByProject)
+				projects.GET("/:id/material-usage/stats", handlers.GetMaterialUsageStats)
 			}
 			
 			// Approvals routes
@@ -196,10 +203,6 @@ func main() {
 				bom.POST("/import", middleware.RequireRole("cost_control", "manager", "director"), handlers.ImportBOMFromTemplate)
 			}
 			
-			// Project BOM routes
-			protected.GET("/projects/:projectId/bom", handlers.GetBOMByProject)
-			protected.GET("/projects/:projectId/bom/calculate", handlers.CalculateBOMUsage)
-			
 			// Material Usage routes
 			materialUsage := protected.Group("/material-usage")
 			{
@@ -208,10 +211,6 @@ func main() {
 				materialUsage.PUT("/:id", middleware.RequireRole("tim_lapangan", "manager", "director"), handlers.UpdateMaterialUsage)
 				materialUsage.DELETE("/:id", middleware.RequireRole("manager", "director"), handlers.DeleteMaterialUsage)
 			}
-			
-			// Project Material Usage routes
-			protected.GET("/projects/:projectId/material-usage", handlers.GetMaterialUsageByProject)
-			protected.GET("/projects/:projectId/material-usage/stats", handlers.GetMaterialUsageStats)
 			
 			// TODO: Users management routes
 		}

@@ -1,12 +1,68 @@
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 import Chart from '@/components/Chart';
 import Table from '@/components/Table';
-import { cashflows, formatCurrency } from '@/lib/dummyData';
-import { TrendingUp, DollarSign, Activity, FileDown } from 'lucide-react';
+import { formatCurrency } from '@/lib/dummyData';
+import { TrendingUp, DollarSign, Activity, FileDown, AlertCircle } from 'lucide-react';
 import { exportCashflowPDF } from '@/lib/pdfExport';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface CashflowData {
+  id: number;
+  projectName: string;
+  month: string;
+  income: number;
+  expense: number;
+  balance: number;
+  project_id?: number;
+}
 
 export default function Cashflow() {
+  const router = useRouter();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const [cashflows, setCashflows] = useState<CashflowData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Auth check
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  // Fetch cashflow data from API
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const fetchCashflowData = async () => {
+      try {
+        setLoading(true);
+        // TODO: Replace with your actual API endpoint
+        // const response = await fetch('/api/v1/cashflow', {
+        //   headers: {
+        //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        //   },
+        // });
+        // const data = await response.json();
+        // setCashflows(data.data || []);
+        
+        // For now, set empty data (no dummy data)
+        setCashflows([]);
+      } catch (err) {
+        console.error('Error fetching cashflow:', err);
+        setError('Failed to load cashflow data');
+        setCashflows([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCashflowData();
+  }, [isAuthenticated]);
+
   // Calculate summary
   const totalIncome = cashflows.reduce((sum, c) => sum + c.income, 0);
   const totalExpense = cashflows.reduce((sum, c) => sum + c.expense, 0);
@@ -211,7 +267,21 @@ export default function Cashflow() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             Detail Cashflow per Proyek
           </h2>
-          <Table columns={columns} data={cashflows} />
+          
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="text-gray-600 mt-4">Loading cashflow data...</p>
+            </div>
+          ) : cashflows.length === 0 ? (
+            <div className="text-center py-12">
+              <Activity className="mx-auto text-gray-400 mb-4" size={48} />
+              <p className="text-gray-500 text-lg mb-2">Tidak ada data cashflow</p>
+              <p className="text-gray-400 text-sm">Buat project pertama Anda dan mulai input data cashflow</p>
+            </div>
+          ) : (
+            <Table columns={columns} data={cashflows} />
+          )}
         </div>
 
         {/* Additional Info */}

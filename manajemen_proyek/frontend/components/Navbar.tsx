@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/router';
-import api from '@/lib/api';
+import { notificationsAPI } from '@/lib/api';
 
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -34,8 +34,8 @@ const Navbar = () => {
   useEffect(() => {
     const fetchUnreadCount = async () => {
       try {
-        const response = await api.get('/notifications/unread-count');
-        setUnreadCount(response.data.unread_count);
+        const response = await notificationsAPI.getUnreadCount();
+        setUnreadCount(response.count || 0);
       } catch (error) {
         console.error('Failed to fetch unread count:', error);
       }

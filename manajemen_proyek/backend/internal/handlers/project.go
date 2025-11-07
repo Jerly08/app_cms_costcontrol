@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/unipro/project-management/internal/middleware"
@@ -43,8 +44,10 @@ func (h *ProjectHandler) GetAllProjects(c *gin.Context) {
 	query := h.DB.Preload("Manager").Preload("Manager.Role").Preload("ProgressBreakdown")
 
 	// Filter based on role
-	if userRole != "director" && userRole != "manager" {
-		// Non-managers only see projects they're involved in
+	// CEO, Director, Project Director, and Manager can see all projects
+	canSeeAll := userRole == "ceo" || userRole == "director" || userRole == "project_director" || userRole == "manager"
+	if !canSeeAll {
+		// Other roles only see projects they're managing
 		query = query.Where("manager_id = ?", userID)
 	}
 
@@ -56,8 +59,8 @@ func (h *ProjectHandler) GetAllProjects(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"projects": projects,
-		"total":    len(projects),
+		"data":  projects,
+		"total": len(projects),
 	})
 }
 
@@ -104,7 +107,47 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 		return
 	}
 
-	// Parse dates (simplified - should use proper date parsing)
+	// Get authenticated user ID as manager
+	userID := middleware.GetUserID(c)
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Unauthorized",
+		})
+		return
+	}
+
+	// Use provided manager_id if present, otherwise use authenticated user
+	managerID := req.ManagerID
+	if managerID == 0 {
+		managerID = userID
+	}
+
+	// Parse dates
+	var startDate, endDate time.Time
+	var err error
+
+	if req.StartDate != "" {
+		startDate, err = time.Parse("2006-01-02", req.StartDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Invalid start date format",
+				"message": "Please use YYYY-MM-DD format",
+			})
+			return
+		}
+	}
+
+	if req.EndDate != "" {
+		endDate, err = time.Parse("2006-01-02", req.EndDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Invalid end date format",
+				"message": "Please use YYYY-MM-DD format",
+			})
+			return
+		}
+	}
+
 	project := models.Project{
 		Name:          req.Name,
 		Description:   req.Description,
@@ -116,7 +159,9 @@ func (h *ProjectHandler) CreateProject(c *gin.Context) {
 		ActualCost:    0,
 		Progress:      0,
 		Status:        models.StatusOnTrack,
-		ManagerID:     req.ManagerID,
+		StartDate:     startDate,
+		EndDate:       endDate,
+		ManagerID:     managerID,
 	}
 
 	// Start transaction

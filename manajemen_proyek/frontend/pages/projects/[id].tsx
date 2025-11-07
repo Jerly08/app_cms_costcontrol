@@ -1,18 +1,73 @@
 import { useRouter } from 'next/router';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
-import { projects, formatCurrency, calculateVariance } from '@/lib/dummyData';
-import { ArrowLeft, Calendar, MapPin, Building2, User as UserIcon, Briefcase } from 'lucide-react';
+import { formatCurrency, calculateVariance } from '@/lib/dummyData';
+import { ArrowLeft, Calendar, MapPin, Building2, User as UserIcon, Briefcase, Loader } from 'lucide-react';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { projectsAPI } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ProjectDetail() {
   const router = useRouter();
   const { id } = router.query;
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const [project, setProject] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Find project by ID
-  const project = projects.find((p) => p.id === Number(id));
+  // Fetch project by ID from API
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push('/login');
+      return;
+    }
 
-  if (!project) {
+    if (id && isAuthenticated) {
+      fetchProject();
+    }
+  }, [id, isAuthenticated, authLoading]);
+
+  const fetchProject = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const response = await projectsAPI.getById(id as string);
+      
+      // Backend returns { project: {...} } instead of { data: {...} }
+      const projectData = response.data || response.project || response;
+      
+      if (!projectData || !projectData.id) {
+        throw new Error('Project data tidak valid dari API');
+      }
+      
+      setProject(projectData);
+    } catch (err: any) {
+      console.error('Error fetching project:', err);
+      setError(err.message || 'Gagal memuat data proyek');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Loading state
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Sidebar />
+        <Navbar />
+        <main className="md:ml-64 pt-16 md:pt-20 p-6">
+          <div className="card text-center py-12">
+            <Loader className="w-8 h-8 mx-auto text-primary animate-spin" />
+            <p className="text-gray-500 mt-4">Memuat data proyek...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Error or not found state
+  if (error || !project) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Sidebar />
@@ -23,7 +78,7 @@ export default function ProjectDetail() {
               Proyek Tidak Ditemukan
             </h2>
             <p className="text-gray-600 mb-4">
-              Proyek dengan ID {id} tidak ditemukan
+              {error || `Proyek dengan ID ${id} tidak ditemukan`}
             </p>
             <Link href="/projects" className="btn-primary">
               Kembali ke Projects
@@ -34,7 +89,14 @@ export default function ProjectDetail() {
     );
   }
 
-  const variance = calculateVariance(project.estimatedCost, project.actualCost);
+  // Map backend field names to frontend
+  const estimatedCost = project.estimated_cost || project.estimatedCost || 0;
+  const actualCost = project.actual_cost || project.actualCost || 0;
+  const startDate = project.start_date || project.startDate || '';
+  const endDate = project.end_date || project.endDate || '';
+  const projectType = project.project_type || project.projectType || '';
+  
+  const variance = calculateVariance(estimatedCost, actualCost);
   const isOverBudget = variance > 0;
 
   const statusColors = {
@@ -43,12 +105,14 @@ export default function ProjectDetail() {
     'Over Budget': 'bg-red-100 text-red-800',
   };
 
-  // Mock progress breakdown data (would come from API)
-  const progressData = project.progressBreakdown || {
-    foundation: 0,
-    utilities: 0,
-    interior: 0,
-    equipment: 0,
+  // Progress breakdown data from API
+  // Backend returns nested progress_breakdown object
+  const progressBreakdown = project.progress_breakdown || {};
+  const progressData = {
+    foundation: progressBreakdown.foundation || project.progress_foundation || 0,
+    utilities: progressBreakdown.utilities || project.progress_utilities || 0,
+    interior: progressBreakdown.interior || project.progress_interior || 0,
+    equipment: progressBreakdown.equipment || project.progress_equipment || 0,
   };
 
   return (
@@ -108,12 +172,12 @@ export default function ProjectDetail() {
                 </div>
               </div>
             )}
-            {project.projectType && (
+            {projectType && (
               <div className="flex items-start gap-3">
                 <Briefcase size={20} className="text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-500">Project Type</p>
-                  <p className="font-medium text-gray-900">{project.projectType}</p>
+                  <p className="font-medium text-gray-900">{projectType}</p>
                 </div>
               </div>
             )}
@@ -131,7 +195,7 @@ export default function ProjectDetail() {
               <div>
                 <p className="text-sm text-gray-500">Timeline</p>
                 <p className="font-medium text-gray-900">
-                  {project.startDate} - {project.endDate}
+                  {startDate} - {endDate}
                 </p>
               </div>
             </div>
@@ -142,13 +206,13 @@ export default function ProjectDetail() {
             <div>
               <p className="text-sm text-gray-500 mb-1">Estimated Cost</p>
               <p className="text-xl font-bold text-gray-900">
-                {formatCurrency(project.estimatedCost)}
+                {formatCurrency(estimatedCost)}
               </p>
             </div>
             <div>
               <p className="text-sm text-gray-500 mb-1">Actual Cost</p>
               <p className="text-xl font-bold text-gray-900">
-                {formatCurrency(project.actualCost)}
+                {formatCurrency(actualCost)}
               </p>
             </div>
             <div>

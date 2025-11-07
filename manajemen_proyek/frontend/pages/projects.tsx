@@ -35,7 +35,9 @@ export default function Projects() {
     try {
       setLoading(true);
       const response = await projectsAPI.getAll();
-      setProjects(response.data || []);
+      // Backend now returns 'data' instead of 'projects'
+      const projectsList = response.data || response.projects || [];
+      setProjects(projectsList);
       setError('');
     } catch (err: any) {
       console.error('Error fetching projects:', err);
@@ -191,7 +193,12 @@ export default function Projects() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <div key={project.id} className="group">
+                <ProjectCard 
+                  project={project} 
+                  onDelete={fetchProjects}
+                />
+              </div>
             ))}
           </div>
         )}
